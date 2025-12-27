@@ -1,4 +1,4 @@
-import { getEntries } from '@/app/services/db';
+import { getEntries } from '@/services/db';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
