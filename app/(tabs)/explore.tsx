@@ -14,6 +14,7 @@ type Entry = {
   formatted_menu: string;
   raw_json: string;
   total_calories?: number;
+  total_macros?: string; // JSON string
   date?: string;
 };
 
@@ -21,6 +22,7 @@ type DaySection = {
   title: string;
   date: Date;
   totalCalories: number;
+  totalMacros: { carbohydrates: number; protein: number; fat: number };
   data: Entry[];
 };
 
@@ -52,7 +54,7 @@ export default function HistoryScreen() {
     const groups: { [key: string]: DaySection } = {};
 
     entries.forEach(entry => {
-      const dateStr = entry.date || new Date().toISOString(); // Fallback for old data
+      const dateStr = entry.date || new Date().toISOString();
       const date = parseISO(dateStr);
       const dayKey = format(date, 'yyyy-MM-dd');
 
@@ -61,12 +63,22 @@ export default function HistoryScreen() {
           title: format(date, 'EEEE, MMM d'),
           date: date,
           totalCalories: 0,
+          totalMacros: { carbohydrates: 0, protein: 0, fat: 0 },
           data: []
         };
       }
       
       groups[dayKey].data.push(entry);
       groups[dayKey].totalCalories += (entry.total_calories || 0);
+      
+      if (entry.total_macros) {
+        try {
+          const m = JSON.parse(entry.total_macros);
+          groups[dayKey].totalMacros.carbohydrates += (m.carbohydrates || 0);
+          groups[dayKey].totalMacros.protein += (m.protein || 0);
+          groups[dayKey].totalMacros.fat += (m.fat || 0);
+        } catch (e) {}
+      }
     });
 
     return Object.values(groups).sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -90,31 +102,50 @@ export default function HistoryScreen() {
     );
   };
 
-  const renderSectionHeader = ({ section: { title, totalCalories } }: { section: DaySection }) => (
+  const renderSectionHeader = ({ section: { title, totalCalories, totalMacros } }: { section: DaySection }) => (
     <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+      <View>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+        <Text style={[styles.sectionMacroSummary, { color: theme.subtext }]}>
+          C: {Math.round(totalMacros.carbohydrates)}g • P: {Math.round(totalMacros.protein)}g • F: {Math.round(totalMacros.fat)}g
+        </Text>
+      </View>
       <Text style={[styles.sectionCalories, { color: theme.success }]}>{totalCalories} cal</Text>
     </View>
   );
 
-  const renderItem = ({ item }: { item: Entry }) => (
-    <TouchableOpacity 
-      style={[styles.itemContainer, { backgroundColor: theme.card, borderColor: theme.border }]} 
-      onPress={() => router.push(`/details/${item.id}`)}
-      onLongPress={() => handleDelete(item.id)}
-    >
-      <View style={styles.itemContent}>
-          <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
-          <Text numberOfLines={2} style={[styles.itemSnippet, { color: theme.subtext }]}>
-              {item.formatted_menu}
-          </Text>
-      </View>
-      <View style={styles.itemMeta}>
-         <Text style={[styles.itemCalories, { color: theme.text }]}>{item.total_calories || 0} cal</Text>
-         <Ionicons name="chevron-forward" size={16} color={theme.icon} />
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: Entry }) => {
+    let macrosText = "";
+    if (item.total_macros) {
+      try {
+        const m = JSON.parse(item.total_macros);
+        macrosText = `C: ${m.carbohydrates}g, P: ${m.protein}g, F: ${m.fat}g`;
+      } catch (e) {}
+    }
+
+    return (
+      <TouchableOpacity 
+        style={[styles.itemContainer, { backgroundColor: theme.card, borderColor: theme.border }]} 
+        onPress={() => router.push(`/details/${item.id}`)}
+        onLongPress={() => handleDelete(item.id)}
+      >
+        <View style={styles.itemContent}>
+            <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
+            <Text numberOfLines={1} style={[styles.itemMacros, { color: theme.tint, fontWeight: '500' }]}>
+                {macrosText}
+            </Text>
+            <Text numberOfLines={2} style={[styles.itemSnippet, { color: theme.subtext }]}>
+                {item.formatted_menu}
+            </Text>
+        </View>
+        <View style={styles.itemMeta}>
+           <Text style={[styles.itemCalories, { color: theme.text }]}>{item.total_calories || 0} cal</Text>
+           <Ionicons name="chevron-forward" size={16} color={theme.icon} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
 
     // Calendar Components
   const CalendarStrip = () => {
@@ -284,6 +315,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
   },
+  sectionMacroSummary: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   sectionCalories: {
       fontSize: 16,
       fontWeight: '600',
@@ -311,11 +346,16 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 17,
     fontWeight: '600',
+    marginBottom: 2,
+  },
+  itemMacros: {
+    fontSize: 13,
     marginBottom: 4,
   },
   itemSnippet: {
     fontSize: 14,
   },
+
   itemMeta: {
       alignItems: 'flex-end',
       justifyContent: 'center',

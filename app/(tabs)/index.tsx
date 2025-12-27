@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { saveEntry } from '@/services/db';
+import { getProfile, saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
@@ -90,10 +90,11 @@ export default function HomeScreen() {
 
     setIsProcessing(true);
     try {
-      const { title, formatted_menu, raw_json, total_calories } = await processInput(items);
+      const profile = await getProfile();
+      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput(items, profile);
       // Ensure date is in ISO format
       const dateStr = selectedDate.toISOString();
-      await saveEntry(title, formatted_menu, raw_json, total_calories, dateStr);
+      await saveEntry(title, formatted_menu, raw_json, total_calories, total_macros, dateStr);
       setItems([]);
       alert('Saved successfully!');
     } catch (error) {
@@ -103,6 +104,7 @@ export default function HomeScreen() {
       setIsProcessing(false);
     }
   };
+
 
   const showAndroidPicker = () => {
       DateTimePickerAndroid.open({
