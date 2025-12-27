@@ -27,11 +27,15 @@ export const Colors = {
     primary: '#007AFF',
     buttonText: '#ffffff',
     calendarBackground: '#1c1c1e',
+    macroProtein: '#4A90E2',
+    macroCarbs: '#F5A623',
+    macroFat: '#FF5A5F',
+    macroCircleBg: '#E0E0E0',
   },
   dark: {
     text: '#ECEDEE',
     subtext: '#9BA1A6',
-    background: '#151718',
+    background: '#0a0a0a', // Darker black for premium feel
     card: '#1c1c1e',
     secondaryCard: '#242627',
     border: '#2c2e30',
@@ -46,6 +50,10 @@ export const Colors = {
     primary: '#0A84FF',
     buttonText: '#ffffff',
     calendarBackground: '#000000',
+    macroProtein: '#90CAF9', // Light Blue
+    macroCarbs: '#FFE082', // Amber
+    macroFat: '#FFAB91', // Deep Orange
+    macroCircleBg: '#2d3436',
   },
 };
 

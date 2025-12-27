@@ -14,9 +14,19 @@ export const initDatabase = async () => {
       weight REAL,
       height REAL,
       gender TEXT,
-      activity_level TEXT
+      activity_level TEXT,
+      target_calories INTEGER,
+      target_protein INTEGER,
+      target_carbs INTEGER,
+      target_fat INTEGER
     );
   `);
+
+  // Migration: Add columns if they usually don't exist
+  try { await db.execAsync('ALTER TABLE profile ADD COLUMN target_calories INTEGER;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE profile ADD COLUMN target_protein INTEGER;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE profile ADD COLUMN target_carbs INTEGER;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE profile ADD COLUMN target_fat INTEGER;'); } catch (e) {}
 
   // Create table if not exists with new schema
   await db.execAsync(`
@@ -44,19 +54,30 @@ export const initDatabase = async () => {
   } catch (e) {}
 };
 
-export const saveProfile = async (name: string, age: number, weight: number, height: number, gender: string, activity_level: string) => {
+export const saveProfile = async (
+  name: string, 
+  age: number, 
+  weight: number, 
+  height: number, 
+  gender: string, 
+  activity_level: string,
+  target_calories: number,
+  target_protein: number,
+  target_carbs: number,
+  target_fat: number
+) => {
   if (!db) await initDatabase();
   // We only keep one profile for now
   const existing = await db!.getFirstAsync<{ id: number }>('SELECT id FROM profile LIMIT 1');
   if (existing) {
     await db!.runAsync(
-      'UPDATE profile SET name = ?, age = ?, weight = ?, height = ?, gender = ?, activity_level = ? WHERE id = ?',
-      name, age, weight, height, gender, activity_level, existing.id
+      'UPDATE profile SET name = ?, age = ?, weight = ?, height = ?, gender = ?, activity_level = ?, target_calories = ?, target_protein = ?, target_carbs = ?, target_fat = ? WHERE id = ?',
+      name, age, weight, height, gender, activity_level, target_calories, target_protein, target_carbs, target_fat, existing.id
     );
   } else {
     await db!.runAsync(
-      'INSERT INTO profile (name, age, weight, height, gender, activity_level) VALUES (?, ?, ?, ?, ?, ?)',
-      name, age, weight, height, gender, activity_level
+      'INSERT INTO profile (name, age, weight, height, gender, activity_level, target_calories, target_protein, target_carbs, target_fat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      name, age, weight, height, gender, activity_level, target_calories, target_protein, target_carbs, target_fat
     );
   }
 };
@@ -68,6 +89,10 @@ export interface Profile {
   height: number;
   gender: string;
   activity_level: string;
+  target_calories: number;
+  target_protein: number;
+  target_carbs: number;
+  target_fat: number;
 }
 
 export const getProfile = async (): Promise<Profile | null> => {

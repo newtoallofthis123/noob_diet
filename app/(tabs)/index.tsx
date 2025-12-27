@@ -1,247 +1,209 @@
+import { FoodList } from '@/components/FoodList';
+import { MacroBars } from '@/components/MacroBars';
+import { MacroCircle } from '@/components/MacroCircle';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getProfile, saveEntry } from '@/services/db';
+import { Entry, getEntries, getProfile, saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import React, { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const [inputText, setInputText] = useState('');
-  const [items, setItems] = useState<string[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   
-  const flatListRef = useRef<FlatList>(null);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showInput, setShowInput] = useState(false); // To toggle input area
+  
+  // Daily Totals
+  const [totalCalories, setTotalCalories] = useState(0);
+  const [totalProtein, setTotalProtein] = useState(0);
+  const [totalCarbs, setTotalCarbs] = useState(0);
+  const [totalFat, setTotalFat] = useState(0);
 
-  useEffect(() => {
-    // Scroll to bottom when adding new items (not while editing)
-    if (editingIndex === null && items.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  // Targets (default)
+  const [targets, setTargets] = useState({
+      calories: 2200,
+      protein: 150,
+      carbs: 250,
+      fat: 80
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const loadData = async () => {
+    try {
+        const [loadedProfile, loadedEntries] = await Promise.all([
+            getProfile(),
+            getEntries()
+        ]);
+
+        if (loadedProfile) {
+            setTargets({
+                calories: loadedProfile.target_calories || 2200,
+                protein: loadedProfile.target_protein || 150,
+                carbs: loadedProfile.target_carbs || 250,
+                fat: loadedProfile.target_fat || 80
+            });
+        }
+
+        // Filter for today
+        const today = new Date().toDateString();
+        const todaysEntries = loadedEntries.filter(e => {
+            const entryDate = new Date(e.date || Date.now());
+            return entryDate.toDateString() === today;
+        });
+
+        setEntries(todaysEntries);
+        calculateTotals(todaysEntries);
+
+    } catch (e) {
+        console.error("Failed to load data", e);
     }
-  }, [items, editingIndex]);
+  };
 
-  const handleSend = () => {
+  const calculateTotals = (items: Entry[]) => {
+      let cal = 0, pro = 0, car = 0, fat = 0;
+      items.forEach(item => {
+          cal += item.total_calories || 0;
+          const macros = item.total_macros ? JSON.parse(item.total_macros) : {};
+          pro += macros.protein || 0;
+          car += macros.carbs || 0;
+          fat += macros.fat || 0;
+      });
+      setTotalCalories(cal);
+      setTotalProtein(pro);
+      setTotalCarbs(car);
+      setTotalFat(fat);
+  };
+
+  const handleSend = async () => {
     if (!inputText.trim()) return;
-
-    if (editingIndex !== null) {
-      // Update existing item
-      const newItems = [...items];
-      newItems[editingIndex] = inputText.trim();
-      setItems(newItems);
-      setEditingIndex(null);
-    } else {
-      // Add new item
-      setItems([...items, inputText.trim()]);
-    }
-    setInputText('');
-  };
-
-  const handleEdit = (index: number) => {
-    setInputText(items[index]);
-    setEditingIndex(index);
-  };
-
-  const handleDelete = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-    if (editingIndex === index) {
-      setEditingIndex(null);
-      setInputText('');
-    } else if (editingIndex !== null && editingIndex > index) {
-        setEditingIndex(editingIndex - 1);
-    }
-  };
-
-  const handleClearAll = () => {
-    Alert.alert(
-        "Clear All",
-        "Are you sure you want to remove all items?",
-        [
-            { text: "Cancel", style: "cancel" },
-            { 
-                text: "Clear", 
-                style: "destructive", 
-                onPress: () => {
-                    setItems([]);
-                    setEditingIndex(null);
-                    setInputText('');
-                }
-            }
-        ]
-    );
-  };
-
-  const handleCancelEdit = () => {
-    setEditingIndex(null);
-    setInputText('');
-    Keyboard.dismiss();
-  };
-
-  const handleSubmit = async () => {
-    if (items.length === 0) return;
-
+    
     setIsProcessing(true);
+    Keyboard.dismiss();
     try {
       const profile = await getProfile();
-      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput(items, profile);
-      // Ensure date is in ISO format
-      const dateStr = selectedDate.toISOString();
+      // processInput expects array of strings
+      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput([inputText], profile);
+      
+      const dateStr = new Date().toISOString();
       await saveEntry(title, formatted_menu, raw_json, total_calories, total_macros, dateStr);
-      setItems([]);
-      alert('Saved successfully!');
+      
+      setInputText('');
+      setShowInput(false);
+      await loadData();
+      // Maybe show a success toast?
     } catch (error) {
       console.error(error);
-      alert('Failed to save.');
+      Alert.alert("Error", "Failed to process entry.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-
-  const showAndroidPicker = () => {
-      DateTimePickerAndroid.open({
-          value: selectedDate,
-          onChange: (event, date) => {
-              if (event.type === 'set' && date) {
-                  const newDate = new Date(selectedDate);
-                  newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                  setSelectedDate(newDate);
-
-                  DateTimePickerAndroid.open({
-                      value: newDate,
-                      mode: 'time',
-                      is24Hour: true,
-                      onChange: (event, time) => {
-                          if (event.type === 'set' && time) {
-                              const finalDate = new Date(newDate);
-                              finalDate.setHours(time.getHours(), time.getMinutes());
-                              setSelectedDate(finalDate);
-                          }
-                      }
-                  });
-              }
-          },
-          mode: 'date',
-          is24Hour: true,
-      });
+  const handleDelete = async (id: number) => {
+      // In a real app we'd verify delete, but for this demo just direct delete or update state
+      // We actually need a delete function in db.ts, which I saw earlier.
+      const { deleteEntry } = require('@/services/db'); 
+      await deleteEntry(id);
+      loadData();
   };
-
-  const onChangeDate = (event: any, date?: Date) => {
-    if (date) {
-        setSelectedDate(date);
-    }
-  };
-
-  const renderItem = ({ item, index }: { item: string; index: number }) => (
-    <View style={[styles.itemContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <Text style={[styles.itemText, { color: theme.text }]}>{item}</Text>
-      <View style={styles.itemActions}>
-        <TouchableOpacity onPress={() => handleEdit(index)} style={styles.actionButton}>
-            <Ionicons name="pencil" size={20} color={theme.tint} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(index)} style={styles.actionButton}>
-            <Ionicons name="trash-outline" size={20} color={theme.danger} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView 
-        style={styles.keyboardAvoid} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>New Entry</Text>
-            {items.length > 0 && (
-                <TouchableOpacity onPress={handleClearAll}>
-                    <Text style={[styles.clearText, { color: theme.danger }]}>Clear All</Text>
+        <ScrollView 
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+        >
+            {/* Header / Date */}
+            <View style={styles.header}>
+                <Text style={[styles.dateText, { color: theme.text }]}>Today</Text>
+            </View>
+
+            {/* Macro Circle */}
+            <MacroCircle 
+                calories={totalCalories} 
+                target={targets.calories} 
+                protein={totalProtein}
+                carbs={totalCarbs}
+                fat={totalFat}
+            />
+
+            {/* Macro Breakdown Bars */}
+            <MacroBars 
+                protein={totalProtein} targetProtein={targets.protein}
+                carbs={totalCarbs} targetCarbs={targets.carbs}
+                fat={totalFat} targetFat={targets.fat}
+            />
+
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            {/* Food List */}
+            <View style={styles.listHeader}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>Consumed</Text>
+                <TouchableOpacity onPress={() => setShowInput(true)}>
+                    <Ionicons name="add-circle" size={28} color={theme.tint} />
                 </TouchableOpacity>
-            )}
-        </View>
+            </View>
+            
+            <FoodList items={entries} onDelete={handleDelete} />
 
-        <View style={[styles.datePickerContainer, { borderBottomColor: theme.secondaryBorder }]}>
-            <Text style={[styles.dateLabel, { color: theme.text }]}>Date:</Text>
-            {Platform.OS === 'android' ? (
-                 <TouchableOpacity onPress={showAndroidPicker} style={[styles.dateButton, { backgroundColor: theme.secondaryCard }]}>
-                    <Text style={{ color: theme.text }}>{selectedDate.toLocaleString()}</Text>
-                 </TouchableOpacity>
-            ) : (
-                <DateTimePicker
-                    testID="dateTimePicker"
-                    value={selectedDate}
-                    mode="datetime"
-                    is24Hour={true}
-                    onChange={onChangeDate}
-                    style={{ marginLeft: 10 }}
-                    textColor={theme.text} // For some picker modes
-                    themeVariant={colorScheme}
+        </ScrollView>
+
+        {/* Floating Input Area or Bottom Sheet */}
+        <View style={[styles.bottomContainer, { backgroundColor: theme.secondaryCard, borderTopColor: theme.secondaryBorder }]}>
+            <View style={styles.inputWrapper}>
+                <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
+                    placeholder="Log a food item (e.g. 'Oatmeal with berries')"
+                    placeholderTextColor={theme.subtext}
+                    value={inputText}
+                    onChangeText={setInputText}
+                    multiline={false} 
+                    returnKeyType="send"
+                    onSubmitEditing={handleSend}
                 />
-            )}
-        </View>
-
-        <FlatList
-          ref={flatListRef}
-          data={items}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          style={styles.list}
-          ListFooterComponent={
-            items.length > 0 ? (
-              <View style={styles.submitContainer}>
                 <TouchableOpacity 
-                    style={[styles.submitButton, { backgroundColor: theme.success }, isProcessing && styles.disabledButton]} 
-                    onPress={handleSubmit}
+                    style={[styles.sendButton, { backgroundColor: theme.tint }, isProcessing && { opacity: 0.6 }]}
+                    onPress={handleSend}
                     disabled={isProcessing}
                 >
-                    <Text style={styles.submitButtonText}>
-                        {isProcessing ? "Processing..." : "Submit Entry"}
-                    </Text>
+                    {isProcessing ? (
+                        <Ionicons name="hourglass" size={20} color="#fff" />
+                    ) : (
+                        <Text style={styles.sendButtonText}>ADD</Text>
+                    )}
                 </TouchableOpacity>
-              </View>
-            ) : (
-                <View style={styles.emptyState}>
-                    <Text style={[styles.emptyText, { color: theme.subtext }]}>Add items to your list below.</Text>
-                </View>
-            )
-          }
-        />
-
-        <View style={[styles.inputWrapper, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-          {editingIndex !== null && (
-               <View style={styles.editingBanner}>
-                   <Text style={[styles.editingText, { color: theme.tint }]}>Editing item #{editingIndex + 1}</Text>
-                   <TouchableOpacity onPress={handleCancelEdit}>
-                       <Ionicons name="close-circle" size={20} color={theme.icon} />
-                   </TouchableOpacity>
-               </View>
-          )}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.secondaryCard, color: theme.text }]}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={editingIndex !== null ? "Update item..." : "Type here..."}
-              placeholderTextColor={theme.subtext}
-              multiline
-              autoCorrect={false} 
-            />
-            <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.tint }, editingIndex !== null && { backgroundColor: theme.tint }]}>
-               <Ionicons name={editingIndex !== null ? "checkmark" : "arrow-up"} size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+            </View>
         </View>
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -251,127 +213,76 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardAvoid: {
-    flex: 1,
+  scrollContent: {
+    paddingTop: 10,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    marginBottom: 10,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  clearText: {
-    fontSize: 16,
-  },
-  datePickerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderBottomWidth: 1,
-  },
-  dateLabel: {
-      fontSize: 16,
-      fontWeight: '600',
-      marginRight: 8,
-  },
-  dateButton: {
-      padding: 8,
-      borderRadius: 8,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-  emptyState: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-      fontSize: 14,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  itemText: {
-    fontSize: 16,
-    flex: 1,
-    marginRight: 10,
-  },
-  itemActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    padding: 4,
-  },
-  submitContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  submitButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 17,
+  dateText: {
+    fontSize: 18,
     fontWeight: '600',
+    opacity: 0.8,
   },
-  inputWrapper: {
-    borderTopWidth: 1,
-    padding: 10,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 10, 
+  divider: {
+      height: 1,
+      width: '90%',
+      alignSelf: 'center',
+      marginVertical: 24,
+      opacity: 0.5,
   },
-  editingBanner: {
+  listHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
-      paddingHorizontal: 4,
+      paddingHorizontal: 24,
+      marginBottom: 0,
   },
-  editingText: {
-      fontWeight: '500',
+  listTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12, // More padding for "Premium" feel
+    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    borderTopWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+        width: 0,
+        height: -3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
   },
   input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingTop: 12, 
-    marginRight: 10,
-    fontSize: 16,
+      flex: 1,
+      height: 50,
+      borderRadius: 25,
+      paddingHorizontal: 20,
+      fontSize: 16,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+      height: 50,
+      paddingHorizontal: 20,
+      borderRadius: 25,
+      justifyContent: 'center',
+      alignItems: 'center',
+  },
+  sendButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: 14,
   }
 });

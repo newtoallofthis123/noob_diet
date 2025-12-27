@@ -4,15 +4,15 @@ import { getProfile, saveProfile } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +26,12 @@ export default function ProfileScreen() {
   const [height, setHeight] = useState('');
   const [gender, setGender] = useState('Not specified');
   const [activityLevel, setActivityLevel] = useState('Moderate');
+  
+  // Macro Targets
+  const [targetCalories, setTargetCalories] = useState('');
+  const [targetProtein, setTargetProtein] = useState('');
+  const [targetCarbs, setTargetCarbs] = useState('');
+  const [targetFat, setTargetFat] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -43,6 +49,11 @@ export default function ProfileScreen() {
         setHeight(profile.height?.toString() || '');
         setGender(profile.gender || 'Not specified');
         setActivityLevel(profile.activity_level || 'Moderate');
+        
+        setTargetCalories(profile.target_calories?.toString() || '2000');
+        setTargetProtein(profile.target_protein?.toString() || '150');
+        setTargetCarbs(profile.target_carbs?.toString() || '200');
+        setTargetFat(profile.target_fat?.toString() || '65');
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -50,8 +61,8 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!name || !age || !weight || !height) {
-      Alert.alert('Missing Info', 'Please fill in all basic fields.');
+    if (!name || !targetCalories) {
+      Alert.alert('Missing Info', 'Please fill in at least Name and Calorie Target.');
       return;
     }
 
@@ -59,11 +70,15 @@ export default function ProfileScreen() {
     try {
       await saveProfile(
         name,
-        parseInt(age),
-        parseFloat(weight),
-        parseFloat(height),
+        parseInt(age) || 0,
+        parseFloat(weight) || 0,
+        parseFloat(height) || 0,
         gender,
-        activityLevel
+        activityLevel,
+        parseInt(targetCalories),
+        parseInt(targetProtein) || 0,
+        parseInt(targetCarbs) || 0,
+        parseInt(targetFat) || 0
       );
       Alert.alert('Success', 'Profile saved successfully!');
     } catch (error) {
@@ -74,17 +89,20 @@ export default function ProfileScreen() {
     }
   };
 
-  const renderInput = (label: string, value: string, onChangeText: (t: string) => void, placeholder: string, keyboardType: any = 'default') => (
+  const renderInput = (label: string, value: string, onChangeText: (t: string) => void, placeholder: string, keyboardType: any = 'default', suffix?: string) => (
     <View style={styles.inputGroup}>
       <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.secondaryCard, color: theme.text, borderColor: theme.border }]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={theme.subtext}
-        keyboardType={keyboardType}
-      />
+      <View style={[styles.inputContainer, { backgroundColor: theme.secondaryCard, borderColor: theme.border }]}>
+        <TextInput
+            style={[styles.input, { color: theme.text }]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={theme.subtext}
+            keyboardType={keyboardType}
+        />
+        {suffix && <Text style={[styles.suffix, { color: theme.subtext }]}>{suffix}</Text>}
+      </View>
     </View>
   );
 
@@ -96,36 +114,71 @@ export default function ProfileScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Ionicons name="person-circle-outline" size={80} color={theme.tint} />
-            <Text style={[styles.title, { color: theme.text }]}>Your Profile</Text>
+            <View style={[styles.avatarContainer, { borderColor: theme.tint }]}>
+                <Ionicons name="person" size={50} color={theme.tint} />
+            </View>
+            <Text style={[styles.title, { color: theme.text }]}>My Profile</Text>
             <Text style={[styles.subtitle, { color: theme.subtext }]}>
-              This helps the AI give you better estimates.
+              Set your goals and personal details
             </Text>
           </View>
 
-          {renderInput('Name', name, setName, 'Enter your name')}
-          {renderInput('Age', age, setAge, 'e.g. 25', 'numeric')}
-          {renderInput('Weight (kg)', weight, setWeight, 'e.g. 70', 'numeric')}
-          {renderInput('Height (cm)', height, setHeight, 'e.g. 175', 'numeric')}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.tint }]}>Daily Targets</Text>
+            <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                    {renderInput('Calories', targetCalories, setTargetCalories, '2000', 'numeric', 'kcal')}
+                </View>
+                <View style={styles.halfWidth}>
+                    {renderInput('Protein', targetProtein, setTargetProtein, '150', 'numeric', 'g')}
+                </View>
+            </View>
+            <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                    {renderInput('Carbs', targetCarbs, setTargetCarbs, '200', 'numeric', 'g')}
+                </View>
+                <View style={styles.halfWidth}>
+                    {renderInput('Fat', targetFat, setTargetFat, '65', 'numeric', 'g')}
+                </View>
+            </View>
+          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>Gender</Text>
-            <View style={styles.pickerRow}>
-              {['Male', 'Female', 'Other'].map((g) => (
-                <TouchableOpacity
-                  key={g}
-                  style={[
-                    styles.pickerItem,
-                    { backgroundColor: theme.secondaryCard, borderColor: theme.border },
-                    gender === g && { backgroundColor: theme.tint, borderColor: theme.tint }
-                  ]}
-                  onPress={() => setGender(g)}
-                >
-                  <Text style={[styles.pickerText, { color: theme.text }, gender === g && { color: '#fff' }]}>
-                    {g}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+          <View style={styles.section}>
+             <Text style={[styles.sectionTitle, { color: theme.tint }]}>Personal Details</Text>
+             {renderInput('Name', name, setName, 'Enter your name')}
+             
+             <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                    {renderInput('Age', age, setAge, '25', 'numeric')}
+                </View>
+                <View style={styles.halfWidth}>
+                    {renderInput('Weight', weight, setWeight, '70', 'numeric', 'kg')}
+                </View>
+             </View>
+             
+             {renderInput('Height (cm)', height, setHeight, 'e.g. 175', 'numeric')}
+
+             <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.text }]}>Gender</Text>
+                <View style={styles.pickerRow}>
+                {['Male', 'Female', 'Other'].map((g) => (
+                    <TouchableOpacity
+                    key={g}
+                    style={[
+                        styles.pickerItem,
+                        { backgroundColor: theme.secondaryCard, borderColor: theme.border },
+                        gender === g && { backgroundColor: theme.tint, borderColor: theme.tint }
+                    ]}
+                    onPress={() => setGender(g)}
+                    >
+                    <Text style={[styles.pickerText, { color: theme.text }, gender === g && { color: '#fff' }]}>
+                        {g}
+                    </Text>
+                    </TouchableOpacity>
+                ))}
+                </View>
             </View>
           </View>
 
@@ -135,7 +188,7 @@ export default function ProfileScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? 'Saving...' : 'Save Profile'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -149,37 +202,74 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 32,
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 10,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
     marginBottom: 8,
   },
-  input: {
-    height: 50,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
+  subtitle: {
     fontSize: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  halfWidth: {
+      flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+  inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      height: 50,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    height: '100%',
+  },
+  suffix: {
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: '500',
   },
   pickerRow: {
     flexDirection: 'row',
@@ -197,16 +287,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   saveButton: {
-    height: 54,
-    borderRadius: 15,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
     color: '#fff',
@@ -216,4 +306,10 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  divider: {
+      height: 1,
+      width: '100%',
+      marginVertical: 24,
+      opacity: 0.2,
+  }
 });
