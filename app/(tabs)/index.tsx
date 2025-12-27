@@ -28,24 +28,23 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   
+  // Data State
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showInput, setShowInput] = useState(false); // To toggle input area
-  
+  const [targets, setTargets] = useState({
+      calories: 2200, protein: 150, carbs: 250, fat: 80
+  });
+
   // Daily Totals
   const [totalCalories, setTotalCalories] = useState(0);
   const [totalProtein, setTotalProtein] = useState(0);
   const [totalCarbs, setTotalCarbs] = useState(0);
   const [totalFat, setTotalFat] = useState(0);
 
-  // Targets (default)
-  const [targets, setTargets] = useState({
-      calories: 2200,
-      protein: 150,
-      carbs: 250,
-      fat: 80
-  });
+  // Staging State (New Entry)
+  const [stagingItems, setStagingItems] = useState<string[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,11 +60,12 @@ export default function HomeScreen() {
         ]);
 
         if (loadedProfile) {
+            console.log("Loaded Profile Targets:", loadedProfile);
             setTargets({
-                calories: loadedProfile.target_calories || 2200,
-                protein: loadedProfile.target_protein || 150,
-                carbs: loadedProfile.target_carbs || 250,
-                fat: loadedProfile.target_fat || 80
+                calories: Number(loadedProfile.target_calories) || 2200,
+                protein: Number(loadedProfile.target_protein) || 150,
+                carbs: Number(loadedProfile.target_carbs) || 250,
+                fat: Number(loadedProfile.target_fat) || 80
             });
         }
 
@@ -90,7 +90,7 @@ export default function HomeScreen() {
           cal += item.total_calories || 0;
           const macros = item.total_macros ? JSON.parse(item.total_macros) : {};
           pro += macros.protein || 0;
-          car += macros.carbs || 0;
+          car += macros.carbohydrates || 0; 
           fat += macros.fat || 0;
       });
       setTotalCalories(cal);
@@ -99,23 +99,65 @@ export default function HomeScreen() {
       setTotalFat(fat);
   };
 
-  const handleSend = async () => {
+  // --- Staging Logic ---
+
+  const handleAddItem = () => {
     if (!inputText.trim()) return;
+
+    if (editingIndex !== null) {
+        const newItems = [...stagingItems];
+        newItems[editingIndex] = inputText.trim();
+        setStagingItems(newItems);
+        setEditingIndex(null);
+    } else {
+        setStagingItems([...stagingItems, inputText.trim()]);
+    }
+    setInputText('');
+  };
+
+  const handleEditItem = (index: number) => {
+      setInputText(stagingItems[index]);
+      setEditingIndex(index);
+  };
+
+  const handleDeleteItem = (index: number) => {
+      const newItems = stagingItems.filter((_, i) => i !== index);
+      setStagingItems(newItems);
+      if (editingIndex === index) {
+          setEditingIndex(null);
+          setInputText('');
+      } else if (editingIndex !== null && editingIndex > index) {
+          setEditingIndex(editingIndex - 1);
+      }
+  };
+
+  const handleClearStaging = () => {
+      Alert.alert("Clear All", "Remove all unsaved items?", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Clear", style: "destructive", onPress: () => {
+              setStagingItems([]);
+              setEditingIndex(null);
+              setInputText('');
+          }}
+      ]);
+  };
+
+  const handleSubmitStaging = async () => {
+    if (stagingItems.length === 0) return;
     
     setIsProcessing(true);
     Keyboard.dismiss();
     try {
       const profile = await getProfile();
-      // processInput expects array of strings
-      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput([inputText], profile);
+      // Process all staging items
+      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput(stagingItems, profile);
       
       const dateStr = new Date().toISOString();
       await saveEntry(title, formatted_menu, raw_json, total_calories, total_macros, dateStr);
       
+      setStagingItems([]);
       setInputText('');
-      setShowInput(false);
       await loadData();
-      // Maybe show a success toast?
     } catch (error) {
       console.error(error);
       Alert.alert("Error", "Failed to process entry.");
@@ -124,22 +166,40 @@ export default function HomeScreen() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-      // In a real app we'd verify delete, but for this demo just direct delete or update state
-      // We actually need a delete function in db.ts, which I saw earlier.
+  const handleDeleteEntry = async (id: number) => {
       const { deleteEntry } = require('@/services/db'); 
       await deleteEntry(id);
       loadData();
   };
 
+  // --- Render ---
+
+  // Determine which list to show
+  const isStagingMode = stagingItems.length > 0;
+
+  const renderStagingItem = ({ item, index }: { item: string, index: number }) => (
+      <View style={[styles.stagingItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.stagingText, { color: theme.text }]}>{item}</Text>
+          <View style={styles.stagingActions}>
+              <TouchableOpacity onPress={() => handleEditItem(index)}>
+                  <Ionicons name="pencil" size={20} color={theme.tint} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteItem(index)}>
+                  <Ionicons name="trash-outline" size={20} color={theme.danger} />
+              </TouchableOpacity>
+          </View>
+      </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView 
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+            contentContainerStyle={[styles.scrollContent]}
             showsVerticalScrollIndicator={false}
         >
             {/* Header / Date */}
@@ -165,41 +225,71 @@ export default function HomeScreen() {
 
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-            {/* Food List */}
-            <View style={styles.listHeader}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>Consumed</Text>
-                <TouchableOpacity onPress={() => setShowInput(true)}>
-                    <Ionicons name="add-circle" size={28} color={theme.tint} />
-                </TouchableOpacity>
-            </View>
-            
-            <FoodList items={entries} onDelete={handleDelete} />
+            {/* Conditional Lists */}
+            {isStagingMode ? (
+                // Staging View
+                <View style={styles.stagingContainer}>
+                    <View style={styles.listHeader}>
+                        <Text style={[styles.listTitle, { color: theme.text }]}>New Entry</Text>
+                        <TouchableOpacity onPress={handleClearStaging}>
+                            <Text style={{ color: theme.danger, fontWeight: '600' }}>Clear All</Text>
+                        </TouchableOpacity>
+                    </View>
+                    
+                    {stagingItems.map((item, index) => (
+                         <View key={index} style={{ marginBottom: 8 }}>
+                             {renderStagingItem({ item, index })}
+                         </View>
+                    ))}
+
+                    <TouchableOpacity 
+                        style={[styles.submitButton, { backgroundColor: theme.success }, isProcessing && { opacity: 0.6 }]}
+                        onPress={handleSubmitStaging}
+                        disabled={isProcessing}
+                    >
+                        <Text style={styles.submitButtonText}>
+                            {isProcessing ? "Processing..." : `Submit ${stagingItems.length} Item${stagingItems.length > 1 ? 's' : ''}`}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                // Consumed View
+                <View>
+                    <View style={styles.listHeader}>
+                        <Text style={[styles.listTitle, { color: theme.text }]}>Consumed</Text>
+                    </View>
+                    <FoodList items={entries} onDelete={handleDeleteEntry} />
+                </View>
+            )}
 
         </ScrollView>
 
-        {/* Floating Input Area or Bottom Sheet */}
+        {/* Input Area */}
         <View style={[styles.bottomContainer, { backgroundColor: theme.secondaryCard, borderTopColor: theme.secondaryBorder }]}>
+            {editingIndex !== null && (
+                <View style={styles.editingBanner}>
+                    <Text style={[styles.editingText, { color: theme.tint }]}>Editing item #{editingIndex + 1}</Text>
+                    <TouchableOpacity onPress={() => { setEditingIndex(null); setInputText(''); }}>
+                        <Ionicons name="close-circle" size={20} color={theme.icon} />
+                    </TouchableOpacity>
+                </View>
+            )}
             <View style={styles.inputWrapper}>
                 <TextInput
                     style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
-                    placeholder="Log a food item (e.g. 'Oatmeal with berries')"
+                    placeholder={editingIndex !== null ? "Update item..." : "Log food"}
                     placeholderTextColor={theme.subtext}
                     value={inputText}
                     onChangeText={setInputText}
                     multiline={false} 
-                    returnKeyType="send"
-                    onSubmitEditing={handleSend}
+                    returnKeyType="done"
+                    onSubmitEditing={handleAddItem}
                 />
                 <TouchableOpacity 
-                    style={[styles.sendButton, { backgroundColor: theme.tint }, isProcessing && { opacity: 0.6 }]}
-                    onPress={handleSend}
-                    disabled={isProcessing}
+                    style={[styles.sendButton, { backgroundColor: theme.tint }]}
+                    onPress={handleAddItem}
                 >
-                    {isProcessing ? (
-                        <Ionicons name="hourglass" size={20} color="#fff" />
-                    ) : (
-                        <Text style={styles.sendButtonText}>ADD</Text>
-                    )}
+                    <Ionicons name={editingIndex ? "checkmark" : "arrow-up"} size={20} color="#fff" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -215,6 +305,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 10,
+    paddingBottom: 20,
   },
   header: {
     alignItems: 'center',
@@ -237,20 +328,49 @@ const styles = StyleSheet.create({
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: 24,
-      marginBottom: 0,
+      marginBottom: 16,
   },
   listTitle: {
       fontSize: 20,
       fontWeight: 'bold',
   },
+  // Staging Styles
+  stagingContainer: {
+      paddingHorizontal: 16,
+      marginBottom: 40,
+  },
+  stagingItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+  },
+  stagingText: {
+      fontSize: 16,
+      flex: 1,
+  },
+  stagingActions: {
+      flexDirection: 'row',
+      gap: 16,
+  },
+  submitButton: {
+      marginTop: 20,
+      paddingVertical: 16,
+      borderRadius: 16,
+      alignItems: 'center',
+  },
+  submitButtonText: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
+  },
+  // Input Styles
   bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 12, // More padding for "Premium" feel
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 12, 
     borderTopWidth: 1,
     shadowColor: "#000",
     shadowOffset: {
@@ -260,6 +380,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 5,
+  },
+  editingBanner: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+      paddingHorizontal: 4,
+  },
+  editingText: {
+      fontWeight: '500',
   },
   inputWrapper: {
       flexDirection: 'row',
@@ -275,14 +405,9 @@ const styles = StyleSheet.create({
   },
   sendButton: {
       height: 50,
-      paddingHorizontal: 20,
+      width: 50,
       borderRadius: 25,
       justifyContent: 'center',
       alignItems: 'center',
   },
-  sendButtonText: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: 14,
-  }
 });
