@@ -38,6 +38,7 @@ export const processInput = async (items: string[], profile: Profile | null) => 
      - "macros": An object with "carbohydrates" (grams, number), "protein" (grams, number), and "fat" (grams, number).
   3. "total_calories": The sum of all calories.
   4. "total_macros": An object with "carbohydrates", "protein", and "fat" representing the sum of all items.
+  5. "quirky_message": A fun, quirky, short message about this meal oriented towards weight loss. Be encouraging but slightly funny.
 
   The input items are: ${items.join(', ')}
 

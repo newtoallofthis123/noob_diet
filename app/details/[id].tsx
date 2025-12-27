@@ -1,17 +1,19 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getEntry, updateEntry } from '@/services/db';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const SEGMENT_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6'];
 
 export default function DetailsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   
   const [entry, setEntry] = useState<any>(null);
+  const [parsedData, setParsedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -32,6 +34,14 @@ export default function DetailsScreen() {
         setEntry(data);
         setTitle(data.title);
         setFormattedMenu(data.formatted_menu);
+        
+        try {
+          // Parse the raw JSON to get structured data for visualization
+          const parsed = JSON.parse(data.raw_json);
+          setParsedData(parsed);
+        } catch (e) {
+          console.error("Failed to parse raw_json", e);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -50,6 +60,45 @@ export default function DetailsScreen() {
       console.error(error);
       alert('Failed to update');
     }
+  };
+
+  const MacroBar = ({ label, macroKey, total }: { label: string, macroKey: 'protein' | 'carbohydrates' | 'fat', total: number }) => {
+    if (!parsedData?.items || total === 0) return null;
+
+    return (
+      <View style={styles.macroRow}>
+        <View style={styles.macroHeader}>
+          <Text style={[styles.macroLabel, { color: theme.text }]}>{label}</Text>
+          <Text style={[styles.macroValue, { color: theme.subtext }]}>{Math.round(total)}g</Text>
+        </View>
+        <View style={styles.progressBarContainer}>
+          {parsedData.items.map((item: any, index: number) => {
+            const itemAmount = item.macros?.[macroKey] || 0;
+            const percentage = (itemAmount / total) * 100;
+            if (percentage <= 0) return null;
+
+            return (
+              <View 
+                key={index}
+                style={[
+                  styles.segment, 
+                  { 
+                    flex: percentage, 
+                    backgroundColor: SEGMENT_COLORS[index % SEGMENT_COLORS.length] 
+                  }
+                ]}
+              >
+                {percentage > 10 && (
+                   <Text style={styles.segmentText} numberOfLines={1}>
+                     {item.name}
+                   </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    );
   };
 
   if (loading) {
@@ -71,7 +120,7 @@ export default function DetailsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ 
-          title: isEditing ? 'Edit Entry' : entry.title,
+          title: isEditing ? 'Edit Entry' : 'Meal Details',
           headerTintColor: theme.tint,
           headerStyle: { backgroundColor: theme.background },
           headerTitleStyle: { color: theme.text }
@@ -113,26 +162,73 @@ export default function DetailsScreen() {
             </View>
           </View>
         ) : (
-          <View>
+          <View style={styles.viewContent}>
+            
+            {/* Header / Title */}
             <View style={styles.headerRow}>
                <Text style={[styles.title, { color: theme.text }]}>{entry.title}</Text>
-               <TouchableOpacity 
-                 onPress={() => setIsEditing(true)} 
-                 style={[styles.editButton, { backgroundColor: theme.primary }]}
-                >
-                    <Text style={styles.buttonText}>Edit</Text>
+               <TouchableOpacity onPress={() => setIsEditing(true)}>
+                  <Text style={{ color: theme.tint, fontWeight: '600' }}>Edit</Text>
                </TouchableOpacity>
             </View>
-            
-            <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Formatted Menu</Text>
-                <Text style={[styles.content, { color: theme.text }]}>{entry.formatted_menu}</Text>
+
+            {/* Quirky Message Card */}
+            {parsedData?.quirky_message && (
+              <View style={[styles.quirkyCard, { backgroundColor: theme.secondaryCard, borderColor: theme.peach }]}>
+                <Text style={styles.quirkyEmoji}>💡</Text>
+                <Text style={[styles.quirkyText, { color: theme.text }]}>
+                  {parsedData.quirky_message}
+                </Text>
+              </View>
+            )}
+
+            {/* Summary Stats Grid */}
+            <View style={styles.statsGrid}>
+              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                 <Text style={[styles.statValue, { color: theme.text }]}>{entry.total_calories}</Text>
+                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Calories</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                 <Text style={[styles.statValue, { color: theme.macroProtein }]}>{Math.round(parsedData?.total_macros?.protein || 0)}g</Text>
+                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Protein</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                 <Text style={[styles.statValue, { color: theme.macroCarbs }]}>{Math.round(parsedData?.total_macros?.carbohydrates || 0)}g</Text>
+                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Carbs</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                 <Text style={[styles.statValue, { color: theme.macroFat }]}>{Math.round(parsedData?.total_macros?.fat || 0)}g</Text>
+                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Fat</Text>
+              </View>
             </View>
 
-            <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Raw JSON</Text>
-                <Text style={[styles.code, { backgroundColor: theme.secondaryCard, color: theme.subtext }]}>{entry.raw_json}</Text>
+            {/* Macro Distribution Bars */}
+            <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Macro Breakdown</Text>
+              
+              <MacroBar 
+                label="Protein" 
+                macroKey="protein" 
+                total={parsedData?.total_macros?.protein || 0} 
+              />
+              <MacroBar 
+                label="Carbs" 
+                macroKey="carbohydrates" 
+                total={parsedData?.total_macros?.carbohydrates || 0} 
+              />
+              <MacroBar 
+                label="Fat" 
+                macroKey="fat" 
+                total={parsedData?.total_macros?.fat || 0} 
+              />
             </View>
+
+            {/* Original Menu Text */}
+            <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Details</Text>
+                <Text style={[styles.content, { color: theme.subtext }]}>{entry.formatted_menu}</Text>
+            </View>
+
           </View>
         )}
       </ScrollView>
@@ -151,34 +247,109 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
+  },
+  viewContent: {
+    gap: 20,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
   },
   title: {
+    fontSize: 28,
+    fontWeight: '800',
+    flex: 1,
+    marginRight: 10,
+  },
+  quirkyCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  quirkyEmoji: {
+    fontSize: 24,
+  },
+  quirkyText: {
+    fontSize: 16,
+    lineHeight: 22,
+    flex: 1,
+    fontStyle: 'italic',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '40%',
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValue: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   section: {
-    marginBottom: 20,
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  macroRow: {
+    marginBottom: 16,
+  },
+  macroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  content: {
-    fontSize: 16,
-    lineHeight: 24,
+  macroLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  code: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    padding: 10,
-    fontSize: 12,
-    borderRadius: 8,
+  macroValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  progressBarContainer: {
+    flexDirection: 'row',
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  segment: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  segmentText: {
+    color: 'rgba(0,0,0,0.7)',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  content: {
+    fontSize: 15,
+    lineHeight: 24,
   },
   form: {
     gap: 15,
@@ -208,11 +379,6 @@ const styles = StyleSheet.create({
       paddingVertical: 12,
       borderRadius: 10,
       alignItems: 'center',
-  },
-  editButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 8,
   },
   buttonText: {
       color: '#fff',
