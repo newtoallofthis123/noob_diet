@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "in.noobscience.diet",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,6 +45,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "58be65cb-9ab1-411d-9cac-12753e840ff1"
+      }
     }
   }
 }
