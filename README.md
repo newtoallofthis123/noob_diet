@@ -1,50 +1,81 @@
-# Welcome to your Expo app 👋
+# Noob Diet 🥗
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern, AI-powered diet tracking application built with Expo and Gemini AI. Log your meals with simple text or photos, and let AI handle the nutrient breakdown.
 
-## Get started
+![Screenshot](./docs/screenshot-home.png)
 
-1. Install dependencies
+## ✨ Features
 
-   ```bash
-   npm install
-   ```
+-   **🤖 AI Food Logging**: Simply type what you ate or snap a photo. Our Gemini-powered engine identifies the food and calculates macros automatically.
+-   **📸 Image Recognition**: Support for multiple image uploads per entry to accurately capture complex meals.
+-   **📊 Macro Dashboard**: Track Calories, Protein, Carbohydrates, and Fat with beautiful, Notion-inspired visualizations.
+-   **📅 Historical Tracking**: A sleek calendar interface to browse through your past meals and daily summaries.
+-   **👤 Personalized Profiles**: Set your target macros and watch your progress toward your health goals.
+-   **🎨 Premium Design**: A clean, minimalist aesthetic with support for both light and dark modes.
 
-2. Start the app
+## 🚀 Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+-   **Framework**: [Expo](https://expo.dev/) (React Native)
+-   **Language**: TypeScript
+-   **Database**: [SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/) (via `expo-sqlite`)
+-   **AI Engine**: [Google Gemini AI](https://ai.google.dev/)
+-   **State Management**: React Hooks & Context
+-   **Styling**: Vanilla React Native StyleSheet with a custom theme system
 
-In the output, you'll find options to open the app in a
+## 🛠️ Getting Started
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Prerequisites
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+-   [Bun](https://bun.sh/) (recommended) or Node.js
+-   [Expo Go](https://expo.dev/go) app on your physical device or an emulator
+-   [Gemini API Key](https://aistudio.google.com/)
 
-## Get a fresh project
+### Installation
 
-When you're ready, run:
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/yourusername/noob_diet.git
+    cd noob_diet
+    ```
 
-```bash
-npm run reset-project
-```
+2.  **Install dependencies**:
+    ```bash
+    bun install
+    # or
+    npm install
+    ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+3.  **Set up environment variables**:
+    Create a `.env` file in the root directory and add your Gemini API key:
+    ```env
+    EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
+    ```
 
-## Learn more
+4.  **Start the development server**:
+    ```bash
+    bun start
+    # or
+    npm start
+    ```
 
-To learn more about developing your project with Expo, look at the following resources:
+5.  **Run on your device**:
+    Scan the QR code with the Expo Go app.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 📖 Usage
 
-## Join the community
+1.  **Log Food**: Go to the Home tab. Type your meal (e.g., "Chicken breast with rice and broccoli") or tap the camera icon to upload a photo.
+2.  **Submit**: Hit the send button to see the AI breakdown, then "Submit" to save it to your daily log.
+3.  **View History**: Use the Explore tab to see your progress over time. Tap any day on the calendar to see that day's specific entries.
+4.  **Manage Goals**: Use the Profile tab to set your target weight and daily calorie/macro goals.
 
-Join our community of developers creating universal apps.
+## 🤝 Contributing
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Built with ❤️ for better health.
