@@ -1,4 +1,5 @@
-
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { deleteEntry, getEntries } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, parseISO, startOfMonth, startOfWeek, subMonths } from 'date-fns';
@@ -24,6 +25,8 @@ type DaySection = {
 };
 
 export default function HistoryScreen() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
   const [sections, setSections] = useState<DaySection[]>([]);
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -88,27 +91,27 @@ export default function HistoryScreen() {
   };
 
   const renderSectionHeader = ({ section: { title, totalCalories } }: { section: DaySection }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionCalories}>{totalCalories} cal</Text>
+    <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.sectionCalories, { color: theme.success }]}>{totalCalories} cal</Text>
     </View>
   );
 
   const renderItem = ({ item }: { item: Entry }) => (
     <TouchableOpacity 
-      style={styles.itemContainer} 
+      style={[styles.itemContainer, { backgroundColor: theme.card, borderColor: theme.border }]} 
       onPress={() => router.push(`/details/${item.id}`)}
       onLongPress={() => handleDelete(item.id)}
     >
       <View style={styles.itemContent}>
-          <Text style={styles.itemTitle}>{item.title}</Text>
-          <Text numberOfLines={2} style={styles.itemSnippet}>
+          <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
+          <Text numberOfLines={2} style={[styles.itemSnippet, { color: theme.subtext }]}>
               {item.formatted_menu}
           </Text>
       </View>
       <View style={styles.itemMeta}>
-         <Text style={styles.itemCalories}>{item.total_calories || 0} cal</Text>
-         <Ionicons name="chevron-forward" size={16} color="#ccc" />
+         <Text style={[styles.itemCalories, { color: theme.text }]}>{item.total_calories || 0} cal</Text>
+         <Ionicons name="chevron-forward" size={16} color={theme.icon} />
       </View>
     </TouchableOpacity>
   );
@@ -200,26 +203,26 @@ export default function HistoryScreen() {
     };
 
     return (
-        <View style={styles.calendarContainer}>
+        <View style={[styles.calendarContainer, { backgroundColor: theme.calendarBackground }]}>
             <TouchableOpacity onPress={toggleExpand} style={styles.monthHeaderContainer}>
                 <View style={styles.monthHeader}>
                     {isExpanded && (
                         <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
-                            <Ionicons name="chevron-back" size={24} color="#A0A0A5" />
+                            <Ionicons name="chevron-back" size={24} color={theme.icon} />
                         </TouchableOpacity>
                     )}
                     <View style={styles.headerTextContainer}>
-                         <Text style={styles.monthText}>{format(currentMonth, 'MMMM yyyy')}</Text>
+                         <Text style={[styles.monthText, { color: theme.icon }]}>{format(currentMonth, 'MMMM yyyy')}</Text>
                          <Ionicons 
                             name={isExpanded ? "chevron-down" : "chevron-up"} 
                             size={16} 
-                            color="#A0A0A5" 
+                            color={theme.icon} 
                             style={{ marginLeft: 5 }}
                          />
                     </View>
                     {isExpanded && (
                         <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-                            <Ionicons name="chevron-forward" size={24} color="#A0A0A5" />
+                            <Ionicons name="chevron-forward" size={24} color={theme.icon} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -228,7 +231,7 @@ export default function HistoryScreen() {
             <View style={[styles.daysRow, isExpanded && styles.daysRowExpanded]}>
                 {!isExpanded && (
                     <View style={styles.weekNumber}>
-                        <Text style={styles.weekNumText}>W{format(selectedDate, 'w')}</Text>
+                        <Text style={[styles.weekNumText, { color: theme.icon }]}>W{format(selectedDate, 'w')}</Text>
                     </View>
                 )}
                 {renderDays()}
@@ -240,7 +243,7 @@ export default function HistoryScreen() {
   const filteredSections = sections.filter(section => isSameDay(section.date, selectedDate));
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
       <SectionList
         sections={filteredSections}
         keyExtractor={(item) => item.id.toString()}
@@ -250,7 +253,7 @@ export default function HistoryScreen() {
         stickySectionHeadersEnabled={false}
         ListEmptyComponent={
             <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No entries for {format(selectedDate, 'MMM d')}</Text>
+                <Text style={[styles.emptyText, { color: theme.subtext }]}>No entries for {format(selectedDate, 'MMM d')}</Text>
             </View>
         }
       />
@@ -263,7 +266,6 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   listContent: {
     padding: 16,
@@ -276,28 +278,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 10,
-    backgroundColor: '#fff', 
     paddingVertical: 5,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#333',
   },
   sectionCalories: {
       fontSize: 16,
       fontWeight: '600',
-      color: '#4CD964', // Greenish
   },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f9f9f9',
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#eee',
     // Shadow for depth
     shadowColor: "#000",
     shadowOffset: {
@@ -315,11 +312,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     marginBottom: 4,
-    color: '#000',
   },
   itemSnippet: {
     fontSize: 14,
-    color: '#666',
   },
   itemMeta: {
       alignItems: 'flex-end',
@@ -329,7 +324,6 @@ const styles = StyleSheet.create({
   itemCalories: {
       fontSize: 15,
       fontWeight: 'bold',
-      color: '#555',
       marginBottom: 4,
   },
   emptyContainer: {
@@ -338,11 +332,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
   },
   // Calendar Styles
   calendarContainer: {
-      backgroundColor: '#1c1c1e', // Dark theme as per image request
       paddingTop: 10,
       paddingBottom: 30, // Safe area padding simulation
       borderTopLeftRadius: 20,
@@ -364,7 +356,6 @@ const styles = StyleSheet.create({
       paddingHorizontal: 10,
   },
   monthText: {
-      color: '#A0A0A5', 
       fontSize: 18,
       fontWeight: '600',
       letterSpacing: 1,
@@ -387,7 +378,6 @@ const styles = StyleSheet.create({
       marginRight: 10,
   },
   weekNumText: {
-      color: '#A0A0A5',
       fontSize: 16,
       fontWeight: 'bold',
   },
@@ -419,10 +409,9 @@ const styles = StyleSheet.create({
       alignItems: 'center',
   },
   selectedDayNumContainer: {
-      backgroundColor: '#FFCC99', // Peach color selected
+      backgroundColor: '#FFCC99', // Peach color selected - keep constant for brand?
   },
   todayNumContainer: {
-     // Optional: different style for today if not selected, e.g. border
      borderWidth: 1,
      borderColor: '#FFCC99',
   },

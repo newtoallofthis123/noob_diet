@@ -5,25 +5,47 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#007AFF';
+const tintColorDark = '#0A84FF'; // System blue for both to ensure visibility
 
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    subtext: '#687076',
+    background: '#ffffff',
+    card: '#f9f9f9',
+    secondaryCard: '#f0f2f5',
+    border: '#eeeeee',
+    secondaryBorder: '#f0f0f0',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    success: '#34C759',
+    danger: '#FF3B30',
+    peach: '#FFCC99',
+    primary: '#007AFF',
+    buttonText: '#ffffff',
+    calendarBackground: '#1c1c1e',
   },
   dark: {
     text: '#ECEDEE',
+    subtext: '#9BA1A6',
     background: '#151718',
+    card: '#1c1c1e',
+    secondaryCard: '#242627',
+    border: '#2c2e30',
+    secondaryBorder: '#323436',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    success: '#32D74B',
+    danger: '#FF453A',
+    peach: '#FFCC99',
+    primary: '#0A84FF',
+    buttonText: '#ffffff',
+    calendarBackground: '#000000',
   },
 };
 

@@ -1,3 +1,5 @@
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +9,8 @@ import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
   const [inputText, setInputText] = useState('');
   const [items, setItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -43,7 +47,6 @@ export default function HomeScreen() {
   const handleEdit = (index: number) => {
     setInputText(items[index]);
     setEditingIndex(index);
-    // Focus the input?? (React Native doesn't easily support auto-focus programmatically without ref, but user will likely tap input)
   };
 
   const handleDelete = (index: number) => {
@@ -102,12 +105,10 @@ export default function HomeScreen() {
   };
 
   const showAndroidPicker = () => {
-      // First show date picker
       DateTimePickerAndroid.open({
           value: selectedDate,
           onChange: (event, date) => {
               if (event.type === 'set' && date) {
-                  // If date decided, now show time picker
                   const newDate = new Date(selectedDate);
                   newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
                   setSelectedDate(newDate);
@@ -138,40 +139,40 @@ export default function HomeScreen() {
   };
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
-    <View style={styles.itemContainer}>
-      <Text style={styles.itemText}>{item}</Text>
+    <View style={[styles.itemContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <Text style={[styles.itemText, { color: theme.text }]}>{item}</Text>
       <View style={styles.itemActions}>
         <TouchableOpacity onPress={() => handleEdit(index)} style={styles.actionButton}>
-            <Ionicons name="pencil" size={20} color="#007AFF" />
+            <Ionicons name="pencil" size={20} color={theme.tint} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDelete(index)} style={styles.actionButton}>
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+            <Ionicons name="trash-outline" size={20} color={theme.danger} />
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoid} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // Adjusted as it's inside SafeAreaView
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.header}>
-            <Text style={styles.title}>New Entry</Text>
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.title, { color: theme.text }]}>New Entry</Text>
             {items.length > 0 && (
                 <TouchableOpacity onPress={handleClearAll}>
-                    <Text style={styles.clearText}>Clear All</Text>
+                    <Text style={[styles.clearText, { color: theme.danger }]}>Clear All</Text>
                 </TouchableOpacity>
             )}
         </View>
 
-        <View style={styles.datePickerContainer}>
-            <Text style={styles.dateLabel}>Date:</Text>
+        <View style={[styles.datePickerContainer, { borderBottomColor: theme.secondaryBorder }]}>
+            <Text style={[styles.dateLabel, { color: theme.text }]}>Date:</Text>
             {Platform.OS === 'android' ? (
-                 <TouchableOpacity onPress={showAndroidPicker} style={styles.dateButton}>
-                    <Text>{selectedDate.toLocaleString()}</Text>
+                 <TouchableOpacity onPress={showAndroidPicker} style={[styles.dateButton, { backgroundColor: theme.secondaryCard }]}>
+                    <Text style={{ color: theme.text }}>{selectedDate.toLocaleString()}</Text>
                  </TouchableOpacity>
             ) : (
                 <DateTimePicker
@@ -181,6 +182,8 @@ export default function HomeScreen() {
                     is24Hour={true}
                     onChange={onChangeDate}
                     style={{ marginLeft: 10 }}
+                    textColor={theme.text} // For some picker modes
+                    themeVariant={colorScheme}
                 />
             )}
         </View>
@@ -196,7 +199,7 @@ export default function HomeScreen() {
             items.length > 0 ? (
               <View style={styles.submitContainer}>
                 <TouchableOpacity 
-                    style={[styles.submitButton, isProcessing && styles.disabledButton]} 
+                    style={[styles.submitButton, { backgroundColor: theme.success }, isProcessing && styles.disabledButton]} 
                     onPress={handleSubmit}
                     disabled={isProcessing}
                 >
@@ -207,31 +210,32 @@ export default function HomeScreen() {
               </View>
             ) : (
                 <View style={styles.emptyState}>
-                    <Text style={styles.emptyText}>Add items to your list below.</Text>
+                    <Text style={[styles.emptyText, { color: theme.subtext }]}>Add items to your list below.</Text>
                 </View>
             )
           }
         />
 
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
           {editingIndex !== null && (
                <View style={styles.editingBanner}>
-                   <Text style={styles.editingText}>Editing item #{editingIndex + 1}</Text>
+                   <Text style={[styles.editingText, { color: theme.tint }]}>Editing item #{editingIndex + 1}</Text>
                    <TouchableOpacity onPress={handleCancelEdit}>
-                       <Ionicons name="close-circle" size={20} color="#666" />
+                       <Ionicons name="close-circle" size={20} color={theme.icon} />
                    </TouchableOpacity>
                </View>
           )}
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.secondaryCard, color: theme.text }]}
               value={inputText}
               onChangeText={setInputText}
               placeholder={editingIndex !== null ? "Update item..." : "Type here..."}
+              placeholderTextColor={theme.subtext}
               multiline
               autoCorrect={false} 
             />
-            <TouchableOpacity onPress={handleSend} style={[styles.sendButton, editingIndex !== null && styles.updateButton]}>
+            <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.tint }, editingIndex !== null && { backgroundColor: theme.tint }]}>
                <Ionicons name={editingIndex !== null ? "checkmark" : "arrow-up"} size={24} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -244,7 +248,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   keyboardAvoid: {
     flex: 1,
@@ -256,14 +259,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
   },
   clearText: {
-    color: '#FF3B30',
     fontSize: 16,
   },
   datePickerContainer: {
@@ -272,7 +273,6 @@ const styles = StyleSheet.create({
       paddingHorizontal: 16,
       paddingVertical: 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#f0f0f0',
   },
   dateLabel: {
       fontSize: 16,
@@ -281,7 +281,6 @@ const styles = StyleSheet.create({
   },
   dateButton: {
       padding: 8,
-      backgroundColor: '#f0f0f0',
       borderRadius: 8,
   },
   list: {
@@ -296,18 +295,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
+      fontSize: 14,
   },
   itemContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#eee',
   },
   itemText: {
     fontSize: 16,
@@ -326,7 +323,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   submitButton: {
-    backgroundColor: '#34C759',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -341,10 +337,8 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    backgroundColor: '#fff',
     padding: 10,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 10, // Adjust if needed
+    paddingBottom: Platform.OS === 'ios' ? 10 : 10, 
   },
   editingBanner: {
       flexDirection: 'row',
@@ -354,7 +348,6 @@ const styles = StyleSheet.create({
       paddingHorizontal: 4,
   },
   editingText: {
-      color: '#007AFF',
       fontWeight: '500',
   },
   inputContainer: {
@@ -365,7 +358,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: '#f0f2f5',
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -374,14 +366,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: '#007AFF',
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  updateButton: {
-      backgroundColor: '#5856D6',
   }
 });
