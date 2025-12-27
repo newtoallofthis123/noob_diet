@@ -182,45 +182,52 @@ export default function DetailsScreen() {
               </View>
             )}
 
-            {/* Summary Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                 <Text style={[styles.statValue, { color: theme.text }]}>{entry.total_calories}</Text>
-                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Calories</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                 <Text style={[styles.statValue, { color: theme.macroProtein }]}>{Math.round(parsedData?.total_macros?.protein || 0)}g</Text>
-                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Protein</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                 <Text style={[styles.statValue, { color: theme.macroCarbs }]}>{Math.round(parsedData?.total_macros?.carbohydrates || 0)}g</Text>
-                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Carbs</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                 <Text style={[styles.statValue, { color: theme.macroFat }]}>{Math.round(parsedData?.total_macros?.fat || 0)}g</Text>
-                 <Text style={[styles.statLabel, { color: theme.subtext }]}>Fat</Text>
-              </View>
+            {/* Total Calories Hero */}
+            <View style={[styles.heroCard, { backgroundColor: theme.card }]}>
+               <Text style={[styles.heroValue, { color: theme.text }]}>{entry.total_calories}</Text>
+               <Text style={[styles.heroLabel, { color: theme.subtext }]}>Total Calories</Text>
             </View>
 
-            {/* Macro Distribution Bars */}
-            <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Macro Breakdown</Text>
+            {/* Macro Summary Row */}
+            <View style={styles.macroSummaryRow}>
+               <View style={styles.macroSummaryItem}>
+                  <Text style={[styles.macroSummaryValue, { color: theme.macroProtein }]}>{Math.round(parsedData?.total_macros?.protein || 0)}g</Text>
+                  <Text style={[styles.macroSummaryLabel, { color: theme.subtext }]}>Protein</Text>
+               </View>
+               <View style={styles.verticalDivider} />
+               <View style={styles.macroSummaryItem}>
+                  <Text style={[styles.macroSummaryValue, { color: theme.macroCarbs }]}>{Math.round(parsedData?.total_macros?.carbohydrates || 0)}g</Text>
+                  <Text style={[styles.macroSummaryLabel, { color: theme.subtext }]}>Carbs</Text>
+               </View>
+               <View style={styles.verticalDivider} />
+               <View style={styles.macroSummaryItem}>
+                  <Text style={[styles.macroSummaryValue, { color: theme.macroFat }]}>{Math.round(parsedData?.total_macros?.fat || 0)}g</Text>
+                  <Text style={[styles.macroSummaryLabel, { color: theme.subtext }]}>Fat</Text>
+               </View>
+            </View>
+
+            {/* Macro Breakdown Section */}
+            <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border, marginTop: 10 }]}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Ingredient Breakdown</Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.subtext }]}>Source of your macros</Text>
               
-              <MacroBar 
-                label="Protein" 
-                macroKey="protein" 
-                total={parsedData?.total_macros?.protein || 0} 
-              />
-              <MacroBar 
-                label="Carbs" 
-                macroKey="carbohydrates" 
-                total={parsedData?.total_macros?.carbohydrates || 0} 
-              />
-              <MacroBar 
-                label="Fat" 
-                macroKey="fat" 
-                total={parsedData?.total_macros?.fat || 0} 
-              />
+              <View style={{ gap: 24, marginTop: 10 }}>
+                <MacroBar 
+                  label="Protein" 
+                  macroKey="protein" 
+                  total={parsedData?.total_macros?.protein || 0} 
+                />
+                <MacroBar 
+                  label="Carbs" 
+                  macroKey="carbohydrates" 
+                  total={parsedData?.total_macros?.carbohydrates || 0} 
+                />
+                <MacroBar 
+                  label="Fat" 
+                  macroKey="fat" 
+                  total={parsedData?.total_macros?.fat || 0} 
+                />
+              </View>
             </View>
 
             {/* Original Menu Text */}
@@ -280,41 +287,62 @@ const styles = StyleSheet.create({
     flex: 1,
     fontStyle: 'italic',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: '40%',
-    padding: 15,
-    borderRadius: 16,
-    borderWidth: 1,
+  heroCard: {
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  section: {
     padding: 20,
     borderRadius: 20,
+    marginBottom: 5,
+  },
+  heroValue: {
+    fontSize: 48,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  heroLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  macroSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  macroSummaryItem: {
+    alignItems: 'center',
+  },
+  macroSummaryValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  macroSummaryLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  verticalDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#e5e5e5', // You might want to use a theme color here if available, or just keeping it subtle
+  },
+  section: {
+    padding: 24,
+    borderRadius: 24,
     borderWidth: 1,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
     marginBottom: 16,
   },
   macroRow: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   macroHeader: {
     flexDirection: 'row',
@@ -322,17 +350,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   macroLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   macroValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
   },
   progressBarContainer: {
     flexDirection: 'row',
-    height: 24,
-    borderRadius: 12,
+    height: 32, // Slightly taller for better readability
+    borderRadius: 16,
     overflow: 'hidden',
     width: '100%',
   },
@@ -342,8 +370,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   segmentText: {
-    color: 'rgba(0,0,0,0.7)',
-    fontSize: 10,
+    color: 'rgba(0,0,0,0.6)', 
+    fontSize: 11,
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
