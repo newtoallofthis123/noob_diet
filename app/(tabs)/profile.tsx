@@ -4,15 +4,15 @@ import { getProfile, saveProfile } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
                     ]}
                     onPress={() => setGender(g)}
                     >
-                    <Text style={[styles.pickerText, { color: theme.text }, gender === g && { color: '#fff' }]}>
+                    <Text style={[styles.pickerText, { color: theme.text }, gender === g && { color: theme.buttonText }]}>
                         {g}
                     </Text>
                     </TouchableOpacity>
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
             onPress={handleSave}
             disabled={isSaving}
           >
-            <Text style={styles.saveButtonText}>
+            <Text style={[styles.saveButtonText, { color: theme.buttonText }]}>
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Text>
           </TouchableOpacity>
@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   saveButtonText: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },

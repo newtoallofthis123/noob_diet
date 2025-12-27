@@ -1,9 +1,11 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getEntry, updateEntry } from '@/services/db';
+import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const SEGMENT_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6'];
 
@@ -14,8 +16,10 @@ export default function DetailsScreen() {
   
   const [entry, setEntry] = useState<any>(null);
   const [parsedData, setParsedData] = useState<any>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [title, setTitle] = useState('');
   const [formattedMenu, setFormattedMenu] = useState('');
@@ -35,6 +39,16 @@ export default function DetailsScreen() {
         setTitle(data.title);
         setFormattedMenu(data.formatted_menu);
         
+        try {
+          if (data.images) {
+             setImages(JSON.parse(data.images));
+          } else {
+             setImages([]);
+          }
+        } catch (e) {
+          setImages([]);
+        }
+
         try {
           // Parse the raw JSON to get structured data for visualization
           const parsed = JSON.parse(data.raw_json);
@@ -172,6 +186,23 @@ export default function DetailsScreen() {
                </TouchableOpacity>
             </View>
 
+            {/* Images - New Section */}
+            {images.length > 0 && (
+                <View style={{ marginBottom: 10 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {images.map((uri, index) => (
+                             <TouchableOpacity key={index} onPress={() => setSelectedImage(uri)}>
+                                <ExpoImage 
+                                   source={{ uri }} 
+                                   style={{ width: 120, height: 120, borderRadius: 16, marginRight: 12 }} 
+                                   contentFit="cover"
+                                />
+                             </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+
             {/* Quirky Message Card */}
             {parsedData?.quirky_message && (
               <View style={[styles.quirkyCard, { backgroundColor: theme.secondaryCard, borderColor: theme.peach }]}>
@@ -239,6 +270,23 @@ export default function DetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Full Screen Image Modal */}
+      <Modal visible={!!selectedImage} transparent={true} animationType="fade">
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.modalCloseButton} onPress={() => setSelectedImage(null)}>
+            <Ionicons name="close-circle" size={40} color="white" />
+          </TouchableOpacity>
+          {selectedImage && (
+             <ExpoImage 
+                source={{ uri: selectedImage }} 
+                style={styles.fullScreenImage} 
+                contentFit="contain"
+             />
+          )}
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -453,5 +501,22 @@ const styles = StyleSheet.create({
       fontWeight: '700',
       fontSize: 16,
       fontFamily: Fonts.sans,
-  }
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 30,
+    zIndex: 1,
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '80%',
+  },
 });

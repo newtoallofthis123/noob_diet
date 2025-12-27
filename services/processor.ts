@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as FileSystem from 'expo-file-system/legacy';
 import { Profile } from "./db";
 
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
-export const processInput = async (items: string[], profile: Profile | null) => {
+export const processInput = async (items: string[], profile: Profile | null, imageUris: string[] = []) => {
   if (!API_KEY) {
     throw new Error("EXPO_PUBLIC_GEMINI_API_KEY is not defined in .env");
   }
@@ -28,6 +29,7 @@ export const processInput = async (items: string[], profile: Profile | null) => 
   const prompt = `
   You are a professional nutrition and calorie estimation assistant. 
   I will give you a list of food items I ate. 
+  ${imageUris.length > 0 ? "I have also attached images of the meal. Use them to estimate portion sizes and identify ingredients more accurately." : ""}
   ${userContext}
   
   Please respond with a JSON object containing:
@@ -46,7 +48,19 @@ export const processInput = async (items: string[], profile: Profile | null) => 
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const parts: any[] = [{ text: prompt }];
+
+    for (const uri of imageUris) {
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+        parts.push({
+            inlineData: {
+                data: base64,
+                mimeType: "image/jpeg" // Assuming JPEG/PNG compatibility
+            }
+        });
+    }
+
+    const result = await model.generateContent(parts);
     const response = await result.response;
     const text = response.text();
     

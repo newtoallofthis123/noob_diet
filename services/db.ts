@@ -52,6 +52,10 @@ export const initDatabase = async () => {
   try {
     await db.execAsync('ALTER TABLE entries ADD COLUMN total_macros TEXT;');
   } catch (e) {}
+  try {
+    // Images will be stored as a JSON string of URI array
+    await db.execAsync('ALTER TABLE entries ADD COLUMN images TEXT;');
+  } catch (e) {}
 };
 
 export const saveProfile = async (
@@ -100,16 +104,18 @@ export const getProfile = async (): Promise<Profile | null> => {
   return await db!.getFirstAsync<Profile>('SELECT * FROM profile LIMIT 1');
 };
 
-export const saveEntry = async (title: string, formatted_menu: string, raw_json: string, total_calories: number, total_macros: string, date: string) => {
+export const saveEntry = async (title: string, formatted_menu: string, raw_json: string, total_calories: number, total_macros: string, date: string, images: string[] = []) => {
   if (!db) await initDatabase();
+  const imagesJson = JSON.stringify(images);
   const result = await db!.runAsync(
-    'INSERT INTO entries (title, formatted_menu, raw_json, total_calories, total_macros, date) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO entries (title, formatted_menu, raw_json, total_calories, total_macros, date, images) VALUES (?, ?, ?, ?, ?, ?, ?)',
     title,
     formatted_menu,
     raw_json,
     total_calories,
     total_macros,
-    date
+    date,
+    imagesJson
   );
   return result.lastInsertRowId;
 };
@@ -122,6 +128,7 @@ export interface Entry {
   total_calories: number;
   total_macros: string; // JSON string
   date: string;
+  images: string; // JSON string of string[]
 }
 
 export const getEntries = async (): Promise<Entry[]> => {

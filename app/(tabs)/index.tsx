@@ -7,6 +7,9 @@ import { Entry, getEntries, getProfile, saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Image as ExpoImage } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useState } from 'react';
 import {
     Alert,
@@ -42,6 +45,7 @@ export default function HomeScreen() {
 
   // Staging State (New Entry)
   const [stagingItems, setStagingItems] = useState<string[]>([]);
+  const [stagingImages, setStagingImages] = useState<string[]>([]);
   const [inputText, setInputText] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -99,6 +103,74 @@ export default function HomeScreen() {
       setTotalFat(fat);
   };
 
+  // --- Image Logic ---
+
+  const handleAddImage = async () => {
+      if (stagingImages.length >= 3) {
+          Alert.alert("Limit Reached", "You can only attach up to 3 images.");
+          return;
+      }
+      
+      Alert.alert("Add Image", "Choose an option", [
+          { text: "Camera", onPress: () => pickImage(true) },
+          { text: "Gallery", onPress: () => pickImage(false) },
+          { text: "Cancel", style: "cancel" }
+      ]);
+  };
+
+  const pickImage = async (useCamera: boolean) => {
+      try {
+          let result;
+          if (useCamera) {
+              const permission = await ImagePicker.requestCameraPermissionsAsync();
+              if (!permission.granted) {
+                  Alert.alert("Permission Denied", "Camera permission is required.");
+                  return;
+              }
+              result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  quality: 0.5,
+              });
+          } else {
+              result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  quality: 0.5,
+              });
+          }
+
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+              setStagingImages((prev) => [...prev, result.assets[0].uri]);
+          }
+      } catch (e) {
+          console.error("Image picker error", e);
+          Alert.alert("Error", "Failed to pick image");
+      }
+  };
+
+  const handleRemoveImage = (index: number) => {
+      setStagingImages(stagingImages.filter((_, i) => i !== index));
+  };
+
+  const saveImagesPersistent = async (uris: string[]): Promise<string[]> => {
+      const savedUris: string[] = [];
+      // Cast to any to avoid incorrect type errors
+      const FS = FileSystem as any;
+      const imageDir = (FS.documentDirectory || '') + 'images/';
+      
+      const dirInfo = await FS.getInfoAsync(imageDir);
+      if (!dirInfo.exists) {
+          await FS.makeDirectoryAsync(imageDir, { intermediates: true });
+      }
+
+      for (const uri of uris) {
+          const filename = uri.split('/').pop() || `image_${Date.now()}.jpg`;
+          const newPath = imageDir + filename;
+          await FS.copyAsync({ from: uri, to: newPath });
+          savedUris.push(newPath);
+      }
+      return savedUris;
+  };
+
   // --- Staging Logic ---
 
   const handleAddItem = () => {
@@ -136,6 +208,7 @@ export default function HomeScreen() {
           { text: "Cancel", style: "cancel" },
           { text: "Clear", style: "destructive", onPress: () => {
               setStagingItems([]);
+              setStagingImages([]);
               setEditingIndex(null);
               setInputText('');
           }}
@@ -143,19 +216,24 @@ export default function HomeScreen() {
   };
 
   const handleSubmitStaging = async () => {
-    if (stagingItems.length === 0) return;
+    if (stagingItems.length === 0 && stagingImages.length === 0) return;
     
     setIsProcessing(true);
     Keyboard.dismiss();
     try {
+      // Save images permanently first
+      const persistentImages = await saveImagesPersistent(stagingImages);
+
       const profile = await getProfile();
-      // Process all staging items
-      const { title, formatted_menu, raw_json, total_calories, total_macros } = await processInput(stagingItems, profile);
+      // Process all staging items with images
+      const { title, formatted_menu, raw_json, total_calories, total_macros } = 
+        await processInput(stagingItems, profile, persistentImages);
       
       const dateStr = new Date().toISOString();
-      await saveEntry(title, formatted_menu, raw_json, total_calories, total_macros, dateStr);
+      await saveEntry(title, formatted_menu, raw_json, total_calories, total_macros, dateStr, persistentImages);
       
       setStagingItems([]);
+      setStagingImages([]);
       setInputText('');
       await loadData();
     } catch (error) {
@@ -175,7 +253,7 @@ export default function HomeScreen() {
   // --- Render ---
 
   // Determine which list to show
-  const isStagingMode = stagingItems.length > 0;
+  const isStagingMode = stagingItems.length > 0 || stagingImages.length > 0;
 
   const renderStagingItem = ({ item, index }: { item: string, index: number }) => (
       <View style={[styles.stagingItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -236,6 +314,23 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                     </View>
                     
+                    {/* Staging Images */}
+                    {stagingImages.length > 0 && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                            {stagingImages.map((uri, index) => (
+                                <View key={index} style={{ marginRight: 12 }}>
+                                    <ExpoImage source={{ uri }} style={{ width: 80, height: 80, borderRadius: 12 }} />
+                                    <TouchableOpacity 
+                                        style={{ position: 'absolute', top: -8, right: -8, backgroundColor: theme.card, borderRadius: 12 }}
+                                        onPress={() => handleRemoveImage(index)}
+                                    >
+                                        <Ionicons name="close-circle" size={24} color={theme.danger} />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    )}
+
                     {stagingItems.map((item, index) => (
                          <View key={index} style={{ marginBottom: 8 }}>
                              {renderStagingItem({ item, index })}
@@ -275,6 +370,9 @@ export default function HomeScreen() {
                 </View>
             )}
             <View style={styles.inputWrapper}>
+                <TouchableOpacity onPress={handleAddImage} style={{ padding: 8 }}>
+                    <Ionicons name="camera-outline" size={24} color={theme.tint} />
+                </TouchableOpacity>
                 <TextInput
                     style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
                     placeholder={editingIndex !== null ? "Update item..." : "Log food"}
