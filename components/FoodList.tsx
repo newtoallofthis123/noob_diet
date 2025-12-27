@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Entry } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     marginTop: 10,
-    gap: 12,
+    gap: 16, // Increased gap
   },
   emptyContainer: {
       padding: 40,
@@ -78,34 +78,46 @@ const styles = StyleSheet.create({
   },
   emptyText: {
       fontSize: 14,
+      fontFamily: Fonts.sans,
+      textAlign: 'center',
+      marginTop: 20,
   },
   itemWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 16,
-    borderWidth: 1, // Subtle border for definition
-    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 0,
+    marginBottom: 0, // Handled by gap
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   mainContent: {
       flex: 1,
       paddingRight: 10,
   },
   leftCol: {
-      gap: 4,
+      gap: 6,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: Fonts.serif, // Serif for item titles
   },
   macros: {
       fontSize: 13,
       fontWeight: '500',
+      fontFamily: Fonts.mono, // Mono for numbers/data often looks cool
+      opacity: 0.8,
   },
   time: {
       fontSize: 11,
       marginTop: 2,
-      opacity: 0.7,
+      opacity: 0.5,
+      fontFamily: Fonts.sans,
   },
   rightCol: {
       alignItems: 'center',
@@ -115,16 +127,19 @@ const styles = StyleSheet.create({
   },
   calories: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
+    fontFamily: Fonts.sans,
   },
   calLabel: {
       fontSize: 10,
       marginTop: -4,
       marginBottom: 4,
+      fontFamily: Fonts.sans,
+      opacity: 0.5,
   },
   deleteBtn: {
       padding: 8,
-      borderRadius: 20, // Circular touch target
+      borderRadius: 12,
       marginTop: 4,
   }
 });

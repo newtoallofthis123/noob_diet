@@ -1,7 +1,7 @@
 import { FoodList } from '@/components/FoodList';
 import { MacroBars } from '@/components/MacroBars';
 import { MacroCircle } from '@/components/MacroCircle';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Entry, getEntries, getProfile, saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
@@ -9,16 +9,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -192,7 +192,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -247,7 +247,7 @@ export default function HomeScreen() {
                         onPress={handleSubmitStaging}
                         disabled={isProcessing}
                     >
-                        <Text style={styles.submitButtonText}>
+                        <Text style={[styles.submitButtonText, { color: theme.buttonText }]}>
                             {isProcessing ? "Processing..." : `Submit ${stagingItems.length} Item${stagingItems.length > 1 ? 's' : ''}`}
                         </Text>
                     </TouchableOpacity>
@@ -289,7 +289,7 @@ export default function HomeScreen() {
                     style={[styles.sendButton, { backgroundColor: theme.tint }]}
                     onPress={handleAddItem}
                 >
-                    <Ionicons name={editingIndex ? "checkmark" : "arrow-up"} size={20} color="#fff" />
+                    <Ionicons name={editingIndex ? "checkmark" : "arrow-up"} size={20} color={theme.buttonText} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -304,24 +304,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 100, // Extra padding for bottom input
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 10,
+    paddingHorizontal: 24,
+    marginBottom: 20,
+    alignItems: 'flex-start',
   },
   dateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    opacity: 0.8,
+    fontSize: 32,
+    fontFamily: Fonts.serif,
+    fontWeight: 'bold',
+    color: Colors.light.text, // Default, will be overridden inline
   },
   divider: {
       height: 1,
       width: '90%',
       alignSelf: 'center',
       marginVertical: 24,
-      opacity: 0.5,
+      opacity: 0.2,
   },
   listHeader: {
       flexDirection: 'row',
@@ -329,26 +331,35 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       paddingHorizontal: 24,
       marginBottom: 16,
+      marginTop: 8,
   },
   listTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
+      fontSize: 22,
+      fontFamily: Fonts.serif,
+      fontWeight: '600',
   },
   // Staging Styles
   stagingContainer: {
       paddingHorizontal: 16,
-      marginBottom: 40,
+      marginBottom: 20,
   },
   stagingItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: 16,
-      borderRadius: 12,
-      borderWidth: 1,
+      borderRadius: 12, // Slightly more squared
+      marginBottom: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 0, // Remove border for clean card look
   },
   stagingText: {
       fontSize: 16,
+      fontFamily: Fonts.sans,
       flex: 1,
   },
   stagingActions: {
@@ -358,38 +369,50 @@ const styles = StyleSheet.create({
   submitButton: {
       marginTop: 20,
       paddingVertical: 16,
-      borderRadius: 16,
+      borderRadius: 12,
       alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
   },
   submitButtonText: {
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: 'bold',
+      fontSize: 16,
+      fontWeight: '600',
+      fontFamily: Fonts.sans,
+      letterSpacing: 0.5,
   },
   // Input Styles
   bottomContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 12, 
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16, 
     borderTopWidth: 1,
     shadowColor: "#000",
     shadowOffset: {
         width: 0,
-        height: -3,
+        height: -4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 0,
   },
   editingBanner: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 12,
       paddingHorizontal: 4,
   },
   editingText: {
-      fontWeight: '500',
+      fontWeight: '600',
+      fontSize: 14,
+      fontFamily: Fonts.sans,
   },
   inputWrapper: {
       flexDirection: 'row',
@@ -398,16 +421,29 @@ const styles = StyleSheet.create({
   },
   input: {
       flex: 1,
-      height: 50,
-      borderRadius: 25,
+      height: 56,
+      borderRadius: 12,
       paddingHorizontal: 20,
       fontSize: 16,
+      fontFamily: Fonts.sans,
+      borderWidth: 1,
+      borderColor: 'transparent', // Can toggle this
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 4,
+      elevation: 1,
   },
   sendButton: {
-      height: 50,
-      width: 50,
-      borderRadius: 25,
+      height: 56,
+      width: 56,
+      borderRadius: 16, // Squircle
       justifyContent: 'center',
       alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
   },
 });

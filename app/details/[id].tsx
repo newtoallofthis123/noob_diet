@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getEntry, updateEntry } from '@/services/db';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -151,13 +151,13 @@ export default function DetailsScreen() {
                  onPress={() => setIsEditing(false)} 
                  style={[styles.actionButton, { backgroundColor: theme.danger }]}
                 >
-                    <Text style={styles.buttonText}>Cancel</Text>
+                    <Text style={[styles.buttonText, { color: theme.buttonText }]}>Cancel</Text>
                </TouchableOpacity>
                <TouchableOpacity 
                  onPress={handleSave} 
                  style={[styles.actionButton, { backgroundColor: theme.success }]}
                 >
-                    <Text style={styles.buttonText}>Save</Text>
+                    <Text style={[styles.buttonText, { color: theme.buttonText }]}>Save</Text>
                </TouchableOpacity>
             </View>
           </View>
@@ -257,58 +257,75 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   viewContent: {
-    gap: 20,
+    gap: 24, // Increased gap for breathing room
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32, // Large Editorial Title
     fontWeight: '800',
     flex: 1,
     marginRight: 10,
+    fontFamily: Fonts.serif,
+    lineHeight: 38,
   },
   quirkyCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
+    padding: 20,
     borderRadius: 16,
-    borderWidth: 1,
-    gap: 12,
+    borderWidth: 0,
+    gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   quirkyEmoji: {
-    fontSize: 24,
+    fontSize: 28,
   },
   quirkyText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 26,
     flex: 1,
     fontStyle: 'italic',
+    fontFamily: Fonts.serif, // Serif for the quote feeling
   },
   heroCard: {
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 20,
+    padding: 24,
+    borderRadius: 24,
     marginBottom: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   heroValue: {
-    fontSize: 48,
+    fontSize: 56,
     fontWeight: '800',
     marginBottom: 4,
+    fontFamily: Fonts.sans, // Sans for big numbers usually cleaner
+    letterSpacing: -1,
   },
   heroLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    fontFamily: Fonts.sans,
+    opacity: 0.6,
   },
   macroSummaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 10,
   },
   macroSummaryItem: {
     alignItems: 'center',
@@ -317,29 +334,42 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
+    fontFamily: Fonts.mono, // Mono for data points
   },
   macroSummaryLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontFamily: Fonts.sans,
   },
   verticalDivider: {
     width: 1,
     height: 30,
-    backgroundColor: '#e5e5e5', // You might want to use a theme color here if available, or just keeping it subtle
+    backgroundColor: '#e5e5e5', 
+    opacity: 0.5,
   },
   section: {
     padding: 24,
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 8,
+    fontFamily: Fonts.serif,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: 15,
+    marginBottom: 20,
+    fontFamily: Fonts.sans,
+    opacity: 0.7,
   },
   macroRow: {
     marginBottom: 0,
@@ -352,15 +382,17 @@ const styles = StyleSheet.create({
   macroLabel: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: Fonts.sans,
   },
   macroValue: {
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: Fonts.mono,
   },
   progressBarContainer: {
     flexDirection: 'row',
-    height: 32, // Slightly taller for better readability
-    borderRadius: 16,
+    height: 36, // Taller bars
+    borderRadius: 12,
     overflow: 'hidden',
     width: '100%',
   },
@@ -370,27 +402,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   segmentText: {
-    color: 'rgba(0,0,0,0.6)', 
+    color: 'rgba(0,0,0,0.7)', 
     fontSize: 11,
-    fontWeight: 'bold',
+    fontWeight: '800',
     textTransform: 'uppercase',
+    fontFamily: Fonts.sans,
   },
   content: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 26,
+    fontFamily: Fonts.serif, // Reading content looks nice in Serif
   },
   form: {
-    gap: 15,
+    gap: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: Fonts.sans,
   },
   input: {
     borderWidth: 1,
-    padding: 10,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     fontSize: 16,
+    fontFamily: Fonts.sans,
   },
   textArea: {
     minHeight: 150,
@@ -400,17 +436,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
-    gap: 12,
+    gap: 16,
   },
   actionButton: {
       flex: 1,
-      paddingVertical: 12,
-      borderRadius: 10,
+      paddingVertical: 16,
+      borderRadius: 12,
       alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
   },
   buttonText: {
-      color: '#fff',
-      fontWeight: '600',
-      fontSize: 15,
+      fontWeight: '700',
+      fontSize: 16,
+      fontFamily: Fonts.sans,
   }
 });

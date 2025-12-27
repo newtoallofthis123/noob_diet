@@ -5,79 +5,79 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#007AFF';
-const tintColorDark = '#0A84FF'; // System blue for both to ensure visibility
+const tintColorLight = '#37352F'; // Dark Grey (Notion-like primary)
+const tintColorDark = '#EBECED'; // Light Grey
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    subtext: '#687076',
-    background: '#ffffff',
-    card: '#f9f9f9',
-    secondaryCard: '#f0f2f5',
-    border: '#eeeeee',
-    secondaryBorder: '#f0f0f0',
+    text: '#37352F',
+    subtext: '#787774', // Muted grey
+    background: '#FBFBFA', // Paper White // warm off-white
+    card: '#FFFFFF', // Clean white for cards to pop against paper
+    secondaryCard: '#F1F1EF', // Light grey for secondary items
+    border: '#E9E9E7', // Very subtle border
+    secondaryBorder: '#E0E0E0', 
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: '#9A9A95',
+    tabIconDefault: '#ACABA9',
     tabIconSelected: tintColorLight,
-    success: '#34C759',
-    danger: '#FF3B30',
-    peach: '#FFCC99',
-    primary: '#007AFF',
-    buttonText: '#ffffff',
-    calendarBackground: '#1c1c1e',
-    macroProtein: '#4A90E2',
-    macroCarbs: '#F5A623',
-    macroFat: '#FF5A5F',
-    macroCircleBg: '#E0E0E0',
+    success: '#448361', // Sage Green
+    danger: '#D44C47', // Soft Red
+    peach: '#FFCC99', // Keep as legacy or update if needed
+    primary: '#37352F', // Main action color
+    buttonText: '#FFFFFF',
+    calendarBackground: '#F7F7F5',
+    macroProtein: '#448361', // Moss/Sage
+    macroCarbs: '#D9730D', // Goldenrod/Clay
+    macroFat: '#E16259', // Terra Cotta
+    macroCircleBg: '#F1F1EF',
   },
   dark: {
-    text: '#ECEDEE',
-    subtext: '#9BA1A6',
-    background: '#0a0a0a', // Darker black for premium feel
-    card: '#1c1c1e',
-    secondaryCard: '#242627',
-    border: '#2c2e30',
-    secondaryBorder: '#323436',
+    text: '#EBECED',
+    subtext: '#979A9B',
+    background: '#191919', // Deep Charcoal
+    card: '#202020', // Slightly lighter charcoal
+    secondaryCard: '#2C2C2C',
+    border: '#2F2F2F',
+    secondaryBorder: '#373737',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#707070',
+    tabIconDefault: '#707070',
     tabIconSelected: tintColorDark,
-    success: '#32D74B',
-    danger: '#FF453A',
+    success: '#5DAF84', // Lighter Sage
+    danger: '#FF6F69', // Soft Coral
     peach: '#FFCC99',
-    primary: '#0A84FF',
-    buttonText: '#ffffff',
-    calendarBackground: '#000000',
-    macroProtein: '#90CAF9', // Light Blue
-    macroCarbs: '#FFE082', // Amber
-    macroFat: '#FFAB91', // Deep Orange
-    macroCircleBg: '#2d3436',
+    primary: '#EBECED',
+    buttonText: '#191919',
+    calendarBackground: '#202020',
+    macroProtein: '#6AB28A', // Pale Green
+    macroCarbs: '#E6A35C', // Pale Gold
+    macroFat: '#E88C83', // Pale Terra Cotta
+    macroCircleBg: '#373737',
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
+    sans: 'System', // Clean sans-serif
     /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
+    serif: 'Georgia', // Elegant serif for headings
     /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
+    rounded: 'System', 
     /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    mono: 'Menlo',
   },
   default: {
-    sans: 'normal',
+    sans: 'sans-serif',
     serif: 'serif',
-    rounded: 'normal',
+    rounded: 'sans-serif-medium',
     mono: 'monospace',
   },
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
+    sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, 'Apple Color Emoji', Arial, sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol'",
+    serif: "Lyon-Text, Georgia, YuMincho, 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', 'Songti TC', 'Songti SC', 'SimSun', 'Nanum Myeongjo', NanumMyeongjo, Batang, serif",
     rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    mono: "iawriter-mono, Nitti, Menlo, Courier, monospace",
   },
 });

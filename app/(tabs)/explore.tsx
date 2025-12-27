@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { deleteEntry, getEntries } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
@@ -307,21 +307,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 16,
     marginBottom: 10,
     paddingVertical: 5,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: Fonts.serif,
   },
   sectionMacroSummary: {
     fontSize: 12,
     marginTop: 2,
+    fontFamily: Fonts.mono,
+    opacity: 0.8,
   },
   sectionCalories: {
       fontSize: 16,
       fontWeight: '600',
+      fontFamily: Fonts.sans,
   },
   itemContainer: {
     flexDirection: 'row',
@@ -329,15 +333,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: 0,
     // Shadow for depth
     shadowColor: "#000",
     shadowOffset: {
         width: 0,
-        height: 1,
+        height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
   itemContent: {
@@ -346,14 +350,18 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 17,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
+    fontFamily: Fonts.serif,
   },
   itemMacros: {
     fontSize: 13,
     marginBottom: 4,
+    fontFamily: Fonts.mono,
   },
   itemSnippet: {
     fontSize: 14,
+    fontFamily: Fonts.sans,
+    opacity: 0.8,
   },
 
   itemMeta: {
@@ -365,6 +373,7 @@ const styles = StyleSheet.create({
       fontSize: 15,
       fontWeight: 'bold',
       marginBottom: 4,
+      fontFamily: Fonts.sans,
   },
   emptyContainer: {
      alignItems: 'center',
@@ -372,13 +381,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    fontFamily: Fonts.sans,
   },
   // Calendar Styles
   calendarContainer: {
-      paddingTop: 10,
+      paddingTop: 16,
       paddingBottom: 30, // Safe area padding simulation
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 4,
   },
   monthHeaderContainer: {
       paddingBottom: 10,
@@ -398,8 +413,8 @@ const styles = StyleSheet.create({
   monthText: {
       fontSize: 18,
       fontWeight: '600',
-      letterSpacing: 1,
-      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      fontFamily: Fonts.serif,
   },
   navButton: {
       padding: 10,
@@ -418,8 +433,9 @@ const styles = StyleSheet.create({
       marginRight: 10,
   },
   weekNumText: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: 'bold',
+      fontFamily: Fonts.mono,
   },
   dayCol: {
       alignItems: 'center',
@@ -434,6 +450,7 @@ const styles = StyleSheet.create({
       fontSize: 12,
       marginBottom: 8,
       fontWeight: '500',
+      fontFamily: Fonts.sans,
   },
   selectedDayText: {
       color: '#fff',
@@ -442,35 +459,36 @@ const styles = StyleSheet.create({
       opacity: 0.3,
   },
   dayNumContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 10,
+      width: 36,
+      height: 36,
+      borderRadius: 12, // Slightly squarer
       justifyContent: 'center',
       alignItems: 'center',
   },
   selectedDayNumContainer: {
-      backgroundColor: '#FFCC99', // Peach color selected - keep constant for brand?
+      backgroundColor: Colors.light.macroCarbs, // Use a theme color (e.g. Clay/Gold)
   },
   todayNumContainer: {
      borderWidth: 1,
-     borderColor: '#FFCC99',
+     borderColor: Colors.light.macroCarbs,
   },
   dayNum: {
       color: '#fff',
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '600',
+      fontFamily: Fonts.sans,
   },
   selectedDayNum: {
-      color: '#1c1c1e', // Dark text on light selection
+      color: '#fff', // White text on selected
   },
   todayNumText: {
-      color: '#FFCC99',
+      color: Colors.light.macroCarbs,
   },
   hasDataDot: {
       width: 4,
       height: 4,
       borderRadius: 2,
-      backgroundColor: '#FFCC99',
-      marginTop: 6,
+      backgroundColor: Colors.light.macroCarbs,
+      marginTop: 4,
   }
 });

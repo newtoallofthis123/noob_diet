@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -78,18 +78,21 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 24,
   },
   textContainer: {
     position: 'absolute',
     alignItems: 'center',
   },
   calories: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: Fonts.serif,
   },
   target: {
-    fontSize: 16,
-    opacity: 0.8,
+    fontSize: 14,
+    opacity: 0.6,
+    fontFamily: Fonts.sans,
+    marginTop: 4,
   },
 });
