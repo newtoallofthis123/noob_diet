@@ -39,7 +39,8 @@ export const processInput = async (items: string[]) => {
     return {
       title: data.title,
       formatted_menu,
-      raw_json
+      raw_json,
+      total_calories: data.total_calories || 0
     };
   } catch (error) {
     console.error("Gemini API Error:", error);

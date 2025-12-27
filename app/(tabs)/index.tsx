@@ -1,6 +1,7 @@
 import { saveEntry } from '@/services/db';
 import { processInput } from '@/services/processor';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ export default function HomeScreen() {
   const [items, setItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   const flatListRef = useRef<FlatList>(null);
 
@@ -85,8 +87,10 @@ export default function HomeScreen() {
 
     setIsProcessing(true);
     try {
-      const { title, formatted_menu, raw_json } = await processInput(items);
-      await saveEntry(title, formatted_menu, raw_json);
+      const { title, formatted_menu, raw_json, total_calories } = await processInput(items);
+      // Ensure date is in ISO format
+      const dateStr = selectedDate.toISOString();
+      await saveEntry(title, formatted_menu, raw_json, total_calories, dateStr);
       setItems([]);
       alert('Saved successfully!');
     } catch (error) {
@@ -94,6 +98,42 @@ export default function HomeScreen() {
       alert('Failed to save.');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const showAndroidPicker = () => {
+      // First show date picker
+      DateTimePickerAndroid.open({
+          value: selectedDate,
+          onChange: (event, date) => {
+              if (event.type === 'set' && date) {
+                  // If date decided, now show time picker
+                  const newDate = new Date(selectedDate);
+                  newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                  setSelectedDate(newDate);
+
+                  DateTimePickerAndroid.open({
+                      value: newDate,
+                      mode: 'time',
+                      is24Hour: true,
+                      onChange: (event, time) => {
+                          if (event.type === 'set' && time) {
+                              const finalDate = new Date(newDate);
+                              finalDate.setHours(time.getHours(), time.getMinutes());
+                              setSelectedDate(finalDate);
+                          }
+                      }
+                  });
+              }
+          },
+          mode: 'date',
+          is24Hour: true,
+      });
+  };
+
+  const onChangeDate = (event: any, date?: Date) => {
+    if (date) {
+        setSelectedDate(date);
     }
   };
 
@@ -124,6 +164,24 @@ export default function HomeScreen() {
                 <TouchableOpacity onPress={handleClearAll}>
                     <Text style={styles.clearText}>Clear All</Text>
                 </TouchableOpacity>
+            )}
+        </View>
+
+        <View style={styles.datePickerContainer}>
+            <Text style={styles.dateLabel}>Date:</Text>
+            {Platform.OS === 'android' ? (
+                 <TouchableOpacity onPress={showAndroidPicker} style={styles.dateButton}>
+                    <Text>{selectedDate.toLocaleString()}</Text>
+                 </TouchableOpacity>
+            ) : (
+                <DateTimePicker
+                    testID="dateTimePicker"
+                    value={selectedDate}
+                    mode="datetime"
+                    is24Hour={true}
+                    onChange={onChangeDate}
+                    style={{ marginLeft: 10 }}
+                />
             )}
         </View>
 
@@ -207,6 +265,24 @@ const styles = StyleSheet.create({
   clearText: {
     color: '#FF3B30',
     fontSize: 16,
+  },
+  datePickerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#f0f0f0',
+  },
+  dateLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginRight: 8,
+  },
+  dateButton: {
+      padding: 8,
+      backgroundColor: '#f0f0f0',
+      borderRadius: 8,
   },
   list: {
     flex: 1,
