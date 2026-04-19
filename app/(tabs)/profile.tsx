@@ -1,8 +1,10 @@
+import CurateGoalModal from '@/components/CurateGoalModal';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getProfile, saveProfile } from '@/services/db';
+import { Entry, getEntries, getProfile, listGoals, Profile, saveProfile, setActiveGoal, WeightGoal } from '@/services/db';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -19,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const router = useRouter();
 
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -34,10 +37,55 @@ export default function ProfileScreen() {
   const [targetFat, setTargetFat] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [goals, setGoals] = useState<WeightGoal[]>([]);
+  const [curateOpen, setCurateOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
   }, []);
+
+  const reloadGoals = useCallback(() => {
+    listGoals().then(setGoals).catch(() => {});
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      getEntries().then(setEntries).catch(() => {});
+      reloadGoals();
+    }, [reloadGoals])
+  );
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const sevenDaysAgoIso = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const todayEntries = entries.filter((e) => e.date === todayIso);
+  const todayKcal = todayEntries.reduce((s, e) => s + (e.total_calories || 0), 0);
+  const todayMacros = todayEntries.reduce(
+    (acc, e) => {
+      try {
+        const m = JSON.parse(e.total_macros || '{}');
+        acc.protein += Number(m.protein) || 0;
+        acc.carbohydrates += Number(m.carbohydrates) || 0;
+        acc.fat += Number(m.fat) || 0;
+      } catch {}
+      return acc;
+    },
+    { protein: 0, carbohydrates: 0, fat: 0 }
+  );
+  const sevenDayKcal = entries
+    .filter((e) => e.date >= sevenDaysAgoIso)
+    .reduce((s, e) => s + (e.total_calories || 0), 0);
+  const sevenDayAvg = Math.round(sevenDayKcal / 7);
+
+  const tc = parseInt(targetCalories) || 0;
+  const tp = parseInt(targetProtein) || 0;
+  const tcarbs = parseInt(targetCarbs) || 0;
+  const tf = parseInt(targetFat) || 0;
 
   const loadProfile = async () => {
     try {
@@ -89,6 +137,68 @@ export default function ProfileScreen() {
     }
   };
 
+  const profileComplete = !!(
+    parseInt(age) > 0 &&
+    parseFloat(weight) > 0 &&
+    parseFloat(height) > 0 &&
+    gender && gender !== 'Not specified' &&
+    activityLevel
+  );
+
+  const buildProfile = (): Profile => ({
+    name,
+    age: parseInt(age) || 0,
+    weight: parseFloat(weight) || 0,
+    height: parseFloat(height) || 0,
+    gender,
+    activity_level: activityLevel,
+    target_calories: parseInt(targetCalories) || 0,
+    target_protein: parseInt(targetProtein) || 0,
+    target_carbs: parseInt(targetCarbs) || 0,
+    target_fat: parseInt(targetFat) || 0,
+  });
+
+  const applyGoal = async (g: WeightGoal) => {
+    try {
+      await setActiveGoal(g.id);
+      await saveProfile(
+        name,
+        parseInt(age) || 0,
+        parseFloat(weight) || 0,
+        parseFloat(height) || 0,
+        gender,
+        activityLevel,
+        g.target_calories,
+        g.target_protein,
+        g.target_carbs,
+        g.target_fat
+      );
+      setTargetCalories(String(g.target_calories));
+      setTargetProtein(String(g.target_protein));
+      setTargetCarbs(String(g.target_carbs));
+      setTargetFat(String(g.target_fat));
+      reloadGoals();
+    } catch (e) {
+      Alert.alert('Error', 'Failed to apply goal.');
+    }
+  };
+
+  const handleGoalTap = (g: WeightGoal) => {
+    Alert.alert(
+      'Apply this goal?',
+      `Overwrite your targets with goal from ${new Date(g.created_at).toLocaleDateString()}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Apply', onPress: () => applyGoal(g) },
+      ]
+    );
+  };
+
+  const handleCurateApplied = async () => {
+    await loadProfile();
+    reloadGoals();
+  };
+
   const renderInput = (label: string, value: string, onChangeText: (t: string) => void, placeholder: string, keyboardType: any = 'default', suffix?: string) => (
     <View style={styles.inputGroup}>
       <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
@@ -114,12 +224,49 @@ export default function ProfileScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => router.push('/settings')}
+              style={styles.settingsButton}
+              accessibilityLabel="Open settings"
+            >
+              <Ionicons name="settings-outline" size={24} color={theme.tint} />
+            </TouchableOpacity>
             <View style={[styles.avatarContainer, { borderColor: theme.tint }]}>
                 <Ionicons name="person" size={50} color={theme.tint} />
             </View>
             <Text style={[styles.title, { color: theme.text }]}>My Profile</Text>
             <Text style={[styles.subtitle, { color: theme.subtext }]}>
               Set your goals and personal details
+            </Text>
+          </View>
+
+          <View style={[styles.statsCard, { backgroundColor: theme.secondaryCard, borderColor: theme.border }]}>
+            <Text style={[styles.statsLabel, { color: theme.subtext }]}>Today</Text>
+            <Text style={[styles.statsKcal, { color: theme.text }]}>
+              {todayKcal}{tc > 0 ? ` / ${tc}` : ''} kcal
+            </Text>
+            <View style={styles.macroRow}>
+              <View style={styles.macroTile}>
+                <Text style={[styles.macroLabel, { color: theme.subtext }]}>P</Text>
+                <Text style={[styles.macroValue, { color: theme.text }]}>
+                  {Math.round(todayMacros.protein)}{tp > 0 ? `/${tp}` : ''}g
+                </Text>
+              </View>
+              <View style={styles.macroTile}>
+                <Text style={[styles.macroLabel, { color: theme.subtext }]}>C</Text>
+                <Text style={[styles.macroValue, { color: theme.text }]}>
+                  {Math.round(todayMacros.carbohydrates)}{tcarbs > 0 ? `/${tcarbs}` : ''}g
+                </Text>
+              </View>
+              <View style={styles.macroTile}>
+                <Text style={[styles.macroLabel, { color: theme.subtext }]}>F</Text>
+                <Text style={[styles.macroValue, { color: theme.text }]}>
+                  {Math.round(todayMacros.fat)}{tf > 0 ? `/${tf}` : ''}g
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.statsAvg, { color: theme.subtext }]}>
+              7-day avg: {sevenDayAvg} kcal/day
             </Text>
           </View>
 
@@ -141,7 +288,58 @@ export default function ProfileScreen() {
                     {renderInput('Fat', targetFat, setTargetFat, '65', 'numeric', 'g')}
                 </View>
             </View>
+            <TouchableOpacity
+              style={[
+                styles.curateButton,
+                { borderColor: theme.tint },
+                !profileComplete && styles.disabledButton,
+              ]}
+              onPress={() => setCurateOpen(true)}
+              disabled={!profileComplete}
+            >
+              <Ionicons name="sparkles-outline" size={18} color={theme.tint} />
+              <Text style={[styles.curateButtonText, { color: theme.tint }]}>Curate with AI</Text>
+            </TouchableOpacity>
+            {!profileComplete && (
+              <Text style={[styles.hint, { color: theme.subtext }]}>
+                Fill Personal Details first to enable AI curation.
+              </Text>
+            )}
           </View>
+
+          {goals.length > 0 && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.tint }]}>Goal History</Text>
+              {goals.map((g) => (
+                <TouchableOpacity
+                  key={g.id}
+                  style={[styles.goalRow, { backgroundColor: theme.secondaryCard, borderColor: theme.border }]}
+                  onPress={() => handleGoalTap(g)}
+                >
+                  <View style={styles.goalRowHeader}>
+                    <Text style={[styles.goalTitle, { color: theme.text }]}>
+                      {g.target_weight}kg · {g.timeline_weeks}w
+                    </Text>
+                    <View style={styles.goalRight}>
+                      {g.active === 1 && (
+                        <View style={[styles.activeBadge, { backgroundColor: theme.tint }]}>
+                          <Text style={[styles.activeBadgeText, { color: theme.buttonText }]}>Active</Text>
+                        </View>
+                      )}
+                      <Text style={[styles.goalDate, { color: theme.subtext }]}>
+                        {new Date(g.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                  {!!g.rationale && (
+                    <Text style={[styles.goalRationale, { color: theme.subtext }]} numberOfLines={2}>
+                      {g.rationale.length > 80 ? g.rationale.slice(0, 80) + '…' : g.rationale}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
@@ -193,6 +391,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+      <CurateGoalModal
+        visible={curateOpen}
+        profile={buildProfile()}
+        onClose={() => setCurateOpen(false)}
+        onApplied={handleCurateApplied}
+      />
     </SafeAreaView>
   );
 }
@@ -208,6 +412,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 32,
+    position: 'relative',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 8,
+    zIndex: 1,
   },
   avatarContainer: {
     width: 100,
@@ -292,10 +504,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
     elevation: 4,
   },
   saveButtonText: {
@@ -310,5 +519,99 @@ const styles = StyleSheet.create({
       width: '100%',
       marginVertical: 24,
       opacity: 0.2,
-  }
+  },
+  statsCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  statsLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  statsKcal: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  macroTile: {
+    flex: 1,
+  },
+  macroLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  macroValue: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  statsAvg: {
+    fontSize: 13,
+  },
+  curateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    height: 48,
+    marginTop: 8,
+  },
+  curateButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  hint: {
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  goalRow: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  goalRowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  goalRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  goalTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  goalDate: {
+    fontSize: 12,
+  },
+  activeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  goalRationale: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

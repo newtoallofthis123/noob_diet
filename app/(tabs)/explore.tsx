@@ -334,14 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 0,
-    // Shadow for depth
-    shadowColor: "#000",
-    shadowOffset: {
-        width: 0,
-        height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
     elevation: 2,
   },
   itemContent: {
@@ -389,10 +382,7 @@ const styles = StyleSheet.create({
       paddingBottom: 30, // Safe area padding simulation
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
+      boxShadow: '0 -4px 10px rgba(0,0,0,0.05)',
       elevation: 4,
   },
   monthHeaderContainer: {

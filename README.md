@@ -45,20 +45,14 @@ A modern, AI-powered diet tracking application built with Expo and Gemini AI. Lo
     npm install
     ```
 
-3.  **Set up environment variables**:
-    Create a `.env` file in the root directory and add your Gemini API key:
-    ```env
-    EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
-    ```
-
-4.  **Start the development server**:
+3.  **Start the development server**:
     ```bash
     bun start
     # or
     npm start
     ```
 
-5.  **Run on your device**:
+4.  **Run on your device**:
     Scan the QR code with the Expo Go app.
 
 ## 📖 Usage
